@@ -430,7 +430,7 @@ window.__qhStart = function () {
       + '<div class="namebox"><label for="my-name">Как тебя назвать в разговоре</label>'
       + '<input id="my-name" maxlength="24" autocomplete="nickname" value="' + esc(prefs.name || info.name) + '">'
       + '<small>Это имя увидят все в комнате. Его можно поменять и потом, в настройках.</small></div>'
-      + '<label class="agree"><input type="checkbox" id="agree"' + (agreed() ? ' checked' : '') + '><span>Согласен на <a href="#" data-privacy>обработку данных</a>: имя, голос, сообщения и фото в чате передаются через голосовой сервис, в том числе за границу, и не записываются</span></label>'
+      + '<label class="agree"><input type="checkbox" id="agree"' + (agreed() ? ' checked' : '') + '><span>Согласен на <a href="#" data-privacy>обработку данных</a>: имя, голос, сообщения и фото в чате передаются через голосовой сервис</span></label>'
       + '<button class="go" id="go">' + ICO.mic + 'Войти в голос</button>'
       + '<p class="note" id="msg">Браузер спросит разрешение на микрофон — нажми «Разрешить»</p>'
       + '</div>');
