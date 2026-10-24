@@ -453,6 +453,9 @@ window.__qhStart = function () {
       + '<button class="go" id="go">' + ICO.mic + 'Войти в голос</button>'
       + '<p class="note" id="msg">Браузер спросит разрешение на микрофон — нажми «Разрешить»</p>'
       + '</div>');
+    // Пока человек читает и вписывает имя — заранее прогреваем связь с
+    // голосовым сервером (адрес, шифрование): «Войти» срабатывает быстрее
+    try { if (LK && url && token) new LK.Room().prepareConnection(url, token); } catch (e) { /* не страшно */ }
     $('go').onclick = function () {
       if (!$('agree').checked) { toast('Отметь согласие на обработку данных — без него войти нельзя', true); return; }
       try { localStorage.setItem(AGREE_KEY, '1'); } catch (e) { /* без памяти */ }
@@ -1027,6 +1030,7 @@ window.__qhStart = function () {
     btn.disabled = true;
     msg.className = 'note';
     msg.textContent = 'Подключаемся…';
+    joinedAt = 0;
     room = new LK.Room({ adaptiveStream: true, dynacast: true, webAudioMix: true, audioCaptureDefaults: captureOpts(),
       audioOutput: prefs.output ? { deviceId: prefs.output } : undefined });
     room.on(LK.RoomEvent.TrackSubscribed, function (track, pub, p) {
@@ -1058,7 +1062,9 @@ window.__qhStart = function () {
       }).catch(function () {});
     });
     room.on(LK.RoomEvent.Disconnected, function (reason) {
-      if (retrying) return;   // это мы сами переподключаемся запасным путём
+      // Ещё не вошли (не получилось подключиться или переподключаемся
+      // запасным путём) — что показать, решает обработчик ошибки ниже
+      if (retrying || !joinedAt) return;
       clearInterval(timer);
       stopSelfMeter();
       stopMeter();
@@ -1086,19 +1092,31 @@ window.__qhStart = function () {
     // Звук не прошёл напрямую (сеть или провайдер режут такие соединения —
     // «negotiation timed out») — второй раз только через сервер-посредник
     // LiveKit по шифрованному 443, как обычный сайт
+    // Если в этой сети напрямую уже не проходило — сразу запасным путём,
+    // без лишнего ожидания (помним неделю). Прямую попытку ждём 8 секунд, не 15
     var retrying = false;
-    var netFail = function (e) { return /negotiation|pc connection|could not establish|timed out|timeout|ICE/i.test(String(e && e.message || e)); };
-    room.connect(url, token)
+    var RELAY_KEY = 'qh-friend-relay';
+    var RELAY = { rtcConfig: { iceTransportPolicy: 'relay' }, peerConnectionTimeout: 20000 };
+    var relayFirst = false;
+    try { relayFirst = Date.now() - Number(localStorage.getItem(RELAY_KEY) || 0) < 7 * 86400000; } catch (e) { /* без памяти */ }
+    var signalFail = function (e) { return /signal connection|Failed to fetch|websocket/i.test(String(e && e.message || e)); };
+    var netFail = function (e) { return !signalFail(e) && /negotiation|pc connection|could not establish|timed out|timeout|ICE/i.test(String(e && e.message || e)); };
+    // Микрофон спрашиваем одновременно с подключением, а не после него
+    var micReady = LK.createLocalAudioTrack(captureOpts());
+    micReady.catch(function () {});
+    room.connect(url, token, relayFirst ? RELAY : { peerConnectionTimeout: 8000 })
+      .then(function () { if (!relayFirst) try { localStorage.removeItem(RELAY_KEY); } catch (e) { /* без памяти */ } })
       .catch(function (err) {
-        if (!netFail(err)) throw err;
+        if (!netFail(err) || relayFirst) throw err;
         msg.textContent = 'Подключаемся запасным путём…';
         retrying = true;
         return Promise.resolve(room.disconnect()).catch(function () {}).then(function () {
           retrying = false;
-          return room.connect(url, token, { rtcConfig: { iceTransportPolicy: 'relay' }, peerConnectionTimeout: 30000 });
-        });
+          return room.connect(url, token, RELAY);
+        }).then(function () { try { localStorage.setItem(RELAY_KEY, String(Date.now())); } catch (e) { /* без памяти */ } });
       })
-      .then(function () { return room.localParticipant.setMicrophoneEnabled(true, captureOpts()); })
+      .then(function () { return micReady; })
+      .then(function (track) { return room.localParticipant.publishTrack(track, { source: LK.Track.Source.Microphone }); })
       .then(function () { return room.startAudio(); })
       .then(function () {
         joinedAt = Date.now();
@@ -1117,10 +1135,13 @@ window.__qhStart = function () {
       })
       .catch(function (err) {
         btn.disabled = false;
+        micReady.then(function (t) { t.stop(); }).catch(function () {});
+        if (!joinedAt && room) { var failed = room; room = null; Promise.resolve(failed.disconnect()).catch(function () {}); }
         var text = String(err && err.message || err);
         msg.className = 'note err';
         msg.textContent = /Permission|NotAllowed/i.test(text) ? 'Браузер не дал микрофон. Разреши доступ к микрофону и нажми ещё раз.'
           : /401|token|expired/i.test(text) ? 'Ссылка устарела или комната уже закрыта. Попроси новую.'
+            : signalFail(text) ? 'Не достучаться до голосового сервера — возможно, его не пускает провайдер или нет интернета. Попробуй другую сеть (Wi‑Fi вместо мобильного или наоборот) и нажми ещё раз.'
             : netFail(text) ? 'Твоя сеть не пропускает голосовую связь — так бывает с мобильным интернетом и некоторыми провайдерами. Попробуй другую сеть (Wi‑Fi вместо мобильного или наоборот) и нажми ещё раз.'
               : 'Не получилось подключиться: ' + text;
       });
