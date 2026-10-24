@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="ru"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0A0B0D">
+<title>Голос из Colizeum · Яркая, 40</title>
+<link rel="icon" href="logo-mark.png">
+<style>
+  /* Страница для друга из дома: открывается по ссылке из голосовой комнаты клуба */
+  :root {
+    --bg: #0A0B0D; --plate: #121417; --plate-2: #171A1E; --plate-3: #1E2228; --plate-4: #262B32; --line: #2A2F36;
+    --text: #F2F4F7; --muted: #B3B9C3; --dim: #8C929D;
+    --xp: #FFC400; --xp-hi: #FFD647; --xp-soft: rgba(255, 196, 0, .10); --xp-edge: rgba(255, 196, 0, .32);
+    --blue: #4FB3F0; --ok: #46E07A; --bad: #FF5A5A;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text);
+    font: 16px/1.5 "Inter", "Segoe UI", Roboto, system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+  body { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column;
+    background:
+      radial-gradient(60vmax 50vmax at -10% -10%, rgba(255, 196, 0, .10), transparent 60%),
+      radial-gradient(60vmax 50vmax at 110% 110%, rgba(79, 179, 240, .10), transparent 60%),
+      var(--bg); }
+  .wrap { width: 100%; max-width: 460px; margin: 0 auto; flex: 1; display: flex; flex-direction: column;
+    padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+  body.in-room .wrap { max-width: 1040px; }
+
+  /* Шапка: знак клуба и название */
+  .top { display: flex; align-items: center; gap: 12px; }
+  .top img { width: 40px; height: 40px; }
+  /* Название клуба и адрес рядом со знаком */
+  .top img { width: 46px; height: 46px; }
+  .brand { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding-left: 12px; border-left: 2px solid var(--xp); }
+  .brand b { font-size: 20px; line-height: 1; letter-spacing: .2em; font-weight: 800;
+    background: linear-gradient(90deg, #FFFFFF 0%, #FFE07A 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .addr { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; line-height: 1.2; color: var(--muted); white-space: nowrap; }
+  .addr svg { width: 13px; height: 13px; flex: none; color: var(--xp); }
+  .addr em { font-style: normal; color: var(--text); font-weight: 600; }
+  .addr i { display: inline-block; width: 3px; height: 3px; border-radius: 50%; background: var(--xp); margin: 0 7px; vertical-align: middle; }
+  /* Узкий экран: от «в эфире» остаётся точка, чтобы адрес не теснился */
+  @media (max-width: 440px) { .live { padding: 8px; font-size: 0; gap: 0; } }
+  .live { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid var(--line);
+    font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+  .live i { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); animation: blink 1.6s infinite; }
+
+  main { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 16px; padding: 28px 0 20px; }
+  body.in-room main { justify-content: flex-start; padding-top: 20px; }
+  .grid { display: grid; gap: 16px; }
+  @media (min-width: 860px) {
+    .grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); align-items: start; }
+  }
+
+  /* Карточка с уголками, как рамка на логотипе */
+  .card { position: relative; padding: 22px 20px; background: linear-gradient(180deg, var(--plate-2), var(--plate)); border: 1px solid var(--line); }
+  .card::before, .card::after { content: ""; position: absolute; width: 22px; height: 22px; pointer-events: none; }
+  .card::before { top: -1px; left: -1px; border-top: 2px solid var(--xp); border-left: 2px solid var(--xp); }
+  .card::after { bottom: -1px; right: -1px; border-bottom: 2px solid var(--blue); border-right: 2px solid var(--blue); }
+
+  .kicker { font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--xp); }
+  h1 { margin: 6px 0 0; font-size: 28px; line-height: 1.15; font-weight: 800; letter-spacing: -.01em; }
+  h2 { margin: 0; font-size: 17px; font-weight: 800; }
+  p { margin: 0; color: var(--muted); }
+
+  /* Приглашение: кто зовёт */
+  .inviter { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+  .ring { position: relative; width: 64px; height: 64px; flex: none; }
+  .ring::before, .ring::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--xp-edge); animation: wave 2.4s ease-out infinite; }
+  .ring::after { animation-delay: 1.2s; }
+  .av { width: 100%; height: 100%; border-radius: 50%; display: grid; place-items: center; position: relative; z-index: 1;
+    font-weight: 800; font-size: 24px; color: #111; background: linear-gradient(135deg, var(--xp-hi), var(--xp)); }
+  .chip { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; padding: 8px 12px; background: var(--plate-3); border: 1px solid var(--line); font-size: 14px; color: var(--muted); }
+  .chip b { color: var(--text); }
+
+  /* Кнопки */
+  button, select, input { font: inherit; color: inherit; }
+  button { font-weight: 800; border: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--xp); outline-offset: 2px; }
+  button:disabled { opacity: .55; cursor: default; }
+  .go { width: 100%; margin-top: 20px; padding: 17px 18px; display: flex; align-items: center; justify-content: center; gap: 10px;
+    color: #111; background: linear-gradient(180deg, var(--xp-hi), var(--xp)); font-size: 17px; letter-spacing: .02em;
+    box-shadow: 0 10px 30px rgba(255, 196, 0, .18); transition: transform .12s, box-shadow .12s; }
+  .go:active { transform: translateY(1px); box-shadow: 0 4px 14px rgba(255, 196, 0, .18); }
+  .go svg { width: 20px; height: 20px; }
+  .note { margin-top: 12px; font-size: 13px; color: var(--dim); text-align: center; }
+  .err { color: var(--bad); }
+
+  /* Разговор: люди в комнате */
+  .head-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .head-row h1 { font-size: 24px; }
+  .timer { font-variant-numeric: tabular-nums; color: var(--dim); font-size: 14px; }
+  .people { display: grid; gap: 8px; margin: 16px 0 0; padding: 0; list-style: none; }
+  .people li { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--plate-3); border: 1px solid transparent; transition: border-color .2s, background .2s; }
+  .people li.on { border-color: rgba(70, 224, 122, .45); background: rgba(70, 224, 122, .06); }
+  .pav { width: 38px; height: 38px; flex: none; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 15px;
+    color: var(--text); background: #2B3038; box-shadow: 0 0 0 2px transparent; transition: box-shadow .2s; }
+  .pav.club { background: linear-gradient(135deg, #2E3B4D, #1F2733); color: #CFE6FA; }
+  .pav.me { background: linear-gradient(135deg, var(--xp-hi), var(--xp)); color: #111; }
+  li.on .pav { box-shadow: 0 0 0 2px var(--ok), 0 0 14px rgba(70, 224, 122, .5); }
+  .pname { flex: 1; min-width: 0; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ptag { font-size: 12px; color: var(--dim); white-space: nowrap; }
+  .ptag.club { color: #9FCBEF; }
+  .ptag.off { color: var(--bad); }
+  .bars { display: inline-flex; gap: 2px; align-items: flex-end; height: 14px; margin-left: 6px; }
+  .bars i { width: 3px; background: var(--ok); border-radius: 1px; animation: bar .8s ease-in-out infinite; }
+  .bars i:nth-child(2) { animation-delay: .15s; } .bars i:nth-child(3) { animation-delay: .3s; }
+
+  .ptt { width: 100%; margin-top: 16px; padding: 18px; background: var(--plate-3); border: 1px dashed var(--xp-edge); color: var(--muted); font-size: 15px; user-select: none; -webkit-user-select: none; touch-action: none; }
+  .ptt.down { background: rgba(70, 224, 122, .12); border: 1px solid var(--ok); color: var(--text); }
+
+  .controls { display: flex; justify-content: center; gap: 22px; margin-top: 20px; }
+  .ctl { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--muted); background: none; padding: 0; }
+  .ctl .c { width: 62px; height: 62px; border-radius: 50%; display: grid; place-items: center; background: var(--plate-3); border: 1px solid var(--line); color: var(--text); transition: background .15s; }
+  .ctl .c svg { width: 25px; height: 25px; }
+  .ctl.off .c { background: rgba(255, 90, 90, .14); border-color: rgba(255, 90, 90, .5); color: var(--bad); }
+  .ctl.leave .c { background: var(--bad); border-color: var(--bad); color: #fff; }
+
+  /* Чат */
+  .chat-card { display: flex; flex-direction: column; padding-bottom: 14px; }
+  .chat-head { display: flex; align-items: center; gap: 10px; }
+  .chat-head small { display: block; color: var(--dim); font-size: 12px; font-weight: 500; }
+  .bell { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; background: var(--plate-3); border: 1px solid var(--line); font-size: 12px; font-weight: 700; color: var(--muted); }
+  .bell.on { color: var(--xp); border-color: var(--xp-edge); }
+  .bell svg { width: 15px; height: 15px; }
+  .chat-list { margin-top: 12px; height: 340px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding: 4px 2px; overscroll-behavior: contain; }
+  @media (min-width: 860px) { .chat-list { height: min(60vh, 520px); } }
+  .chat-empty { margin: auto; text-align: center; color: var(--dim); font-size: 14px; padding: 20px; }
+  .msg { display: flex; gap: 10px; padding: 6px 4px; }
+  .msg.cont { padding-top: 0; }
+  .msg .mav { width: 32px; height: 32px; flex: none; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 800; color: #111; }
+  .msg.cont .mav { visibility: hidden; height: 0; }
+  .mbody { min-width: 0; flex: 1; }
+  .mmeta { display: flex; align-items: baseline; gap: 8px; }
+  .mmeta b { font-size: 14px; }
+  .msg.mine .mmeta b { color: var(--xp); }
+  .mfrom { font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #9FCBEF; padding: 0 5px; border: 1px solid rgba(79, 179, 240, .35); }
+  .mtime { font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; }
+  .mtext { color: var(--text); word-wrap: break-word; overflow-wrap: anywhere; white-space: pre-wrap; }
+  .mtext a { color: var(--blue); }
+  .msg.pending .mtext { opacity: .55; }
+  .msg .merr { font-size: 12px; color: var(--bad); }
+  .msg .merr button { background: none; color: var(--xp); padding: 0; font-weight: 700; text-decoration: underline; }
+  .chat-form { display: flex; gap: 8px; margin-top: 12px; }
+  .chat-form input { flex: 1; min-width: 0; padding: 12px 14px; background: var(--plate-3); border: 1px solid var(--line); outline: none; }
+  .chat-form input:focus { border-color: var(--xp-edge); }
+  .chat-form button { flex: none; width: 48px; display: grid; place-items: center; color: #111; background: var(--xp); }
+  .chat-form button svg { width: 20px; height: 20px; }
+
+  /* Настройки — выезжающая панель */
+  .sheet-bg { position: fixed; inset: 0; z-index: 10; background: rgba(0, 0, 0, .6); display: flex; align-items: flex-end; justify-content: center; }
+  @media (min-width: 860px) { .sheet-bg { align-items: center; } }
+  .sheet { width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto; background: var(--plate); border: 1px solid var(--line); border-top: 2px solid var(--xp);
+    padding: 20px 20px max(20px, env(safe-area-inset-bottom)); animation: up .2s ease-out; }
+  .sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .x { width: 38px; height: 38px; background: var(--plate-3); border: 1px solid var(--line); color: var(--muted); font-size: 20px; line-height: 1; }
+  .set { padding: 14px 0; border-bottom: 1px solid var(--line); display: grid; gap: 8px; }
+  .set:last-of-type { border-bottom: 0; }
+  .set > label, .set > .lbl { font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: .02em; }
+  .set select { width: 100%; padding: 11px 12px; background: var(--plate-3); border: 1px solid var(--line); }
+  .meter { height: 10px; background: var(--plate-3); border: 1px solid var(--line); overflow: hidden; }
+  .meter i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--ok), var(--xp)); transition: width .06s linear; }
+  .hint { font-size: 12px; color: var(--dim); }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .seg button { padding: 11px 10px; background: var(--plate-3); border: 1px solid var(--line); font-size: 14px; font-weight: 700; color: var(--muted); }
+  .seg button.on { color: #111; background: var(--xp); border-color: var(--xp); }
+  .tog { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 0; font-size: 15px; color: var(--text); cursor: pointer; }
+  .tog input { appearance: none; -webkit-appearance: none; flex: none; width: 44px; height: 26px; border-radius: 13px; background: var(--plate-4); position: relative; cursor: pointer; transition: background .15s; }
+  .tog input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .15s; }
+  .tog input:checked { background: var(--ok); }
+  .tog input:checked::after { transform: translateX(18px); }
+  .vol { display: grid; grid-template-columns: minmax(0, 1fr) 1.4fr 44px; gap: 10px; align-items: center; font-size: 14px; }
+  .vol span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vol output { text-align: right; color: var(--dim); font-variant-numeric: tabular-nums; font-size: 13px; }
+  input[type=range] { width: 100%; accent-color: var(--xp); }
+  .done { width: 100%; margin-top: 14px; padding: 14px; color: #111; background: var(--xp); }
+
+  /* Экраны «закрылась», «устарела» */
+  .big-ico { width: 56px; height: 56px; display: grid; place-items: center; margin-bottom: 14px; border: 1px solid var(--line); background: var(--plate-3); color: var(--xp); }
+  .big-ico svg { width: 28px; height: 28px; }
+
+  /* Приписка клуба */
+
+  @keyframes wave { 0% { transform: scale(1); opacity: .9; } 100% { transform: scale(1.55); opacity: 0; } }
+  @keyframes blink { 50% { opacity: .35; } }
+  @keyframes bar { 0%, 100% { height: 4px; } 50% { height: 14px; } }
+  @keyframes up { from { transform: translateY(24px); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head><body>
+<div class="wrap">
+  <header class="top">
+    <img src="logo-mark.png" alt="">
+    <div class="brand"><b>COLIZEUM</b>
+      <span class="addr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span>на <em>Яркой, 40</em><i></i>г.&nbsp;Краснодар</span></span></div>
+    <span class="live" id="live" hidden><i></i>в эфире</span>
+  </header>
+  <main id="app"><p>Загружаем…</p></main>
+</div>
+<div id="audio" hidden></div>
+<script>
+// Библиотека голоса: рядом со страницей, а если её нет (страница на GitHub Pages) — с CDN
+(function load(list) {
+  var sc = document.createElement('script');
+  sc.src = list[0];
+  sc.onload = function () { window.__qhStart(); };
+  sc.onerror = function () { if (list.length > 1) load(list.slice(1)); else window.__qhStart(); };
+  document.head.appendChild(sc);
+})(['livekit-client.umd.js', 'https://cdn.jsdelivr.net/npm/livekit-client@2.15.6/dist/livekit-client.umd.js', 'https://unpkg.com/livekit-client@2.15.6/dist/livekit-client.umd.js']);
+</script>
+<script>
+window.__qhStart = function () {
+  'use strict';
+  var LK = window.LivekitClient;
+  var app = document.getElementById('app');
+  var live = document.getElementById('live');
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  var initial = function (s) { var c = String(s || '?').trim().charAt(0); return esc(c ? c.toUpperCase() : '?'); };
+  var TOPIC = 'qh-chat';
+  var AVA = ['#FFC400', '#4FB3F0', '#46E07A', '#FF8A5B', '#C08BFF', '#FF6FA3', '#5FD3C6', '#E8D25A'];
+
+  var ICO = {
+    mic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/></svg>',
+    micOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 9.3V5a3 3 0 0 0-5.7-1.3M9 9v2a3 3 0 0 0 5.1 2.1M19 11a7 7 0 0 1-1.2 3.9M5 11a7 7 0 0 0 10.8 5.9M12 18v4M8 22h8M3 3l18 18"/></svg>',
+    gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+    leave: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14.5c-2.2-.6-4.3-1.8-6-3.5a1.5 1.5 0 0 1 0-2.1l1.8-1.8a1.5 1.5 0 0 1 2.1 0l1.4 1.4M14 9.5c2.2.6 4.3 1.8 6 3.5a1.5 1.5 0 0 1 0 2.1l-1.8 1.8a1.5 1.5 0 0 1-2.1 0l-1.4-1.4M3 21L21 3"/></svg>',
+    send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>',
+    bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0v4l-2 3h16l-2-3z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg>',
+    bellOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-9.3-5M6 8v4l-2 3h12M10 19a2 2 0 0 0 4 0M3 3l18 18"/></svg>',
+    clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+    link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>',
+  };
+
+  // Пропуск — во фрагменте ссылки (#t=…): на сервер он не уходит
+  var hash = new URLSearchParams(location.hash.slice(1));
+  var token = hash.get('t') || '';
+  // Адрес голосового сервера: тот же адрес (или ?u= для проверки)
+  // Адрес голосового сервера: в ссылке (#…&u=, облако LiveKit), ?u= для проверки или тот же адрес
+  var url = hash.get('u') || new URLSearchParams(location.search).get('u') || ((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+  if (!/^wss?:\/\//.test(url)) url = '';
+  var info = null;
+  try {
+    var pl = JSON.parse(decodeURIComponent(escape(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))));
+    info = { name: pl.name, exp: pl.exp, by: (JSON.parse(pl.metadata || '{}').by) || '' };
+  } catch (e) { info = null; }
+
+  // Настройки — в этом браузере
+  var prefs = { input: '', output: '', ns: true, ec: true, agc: true, mode: 'open', sound: true, vol: {} };
+  try { Object.assign(prefs, JSON.parse(localStorage.getItem('qh-friend-voice') || '{}')); } catch (e) { /* нет хранилища */ }
+  function savePrefs() { try { localStorage.setItem('qh-friend-voice', JSON.stringify(prefs)); } catch (e) { /* нет хранилища */ } }
+
+  function screen(html) { app.innerHTML = html; }
+  function message(icon, kicker, title, text) {
+    live.hidden = true;
+    document.body.classList.remove('in-room');
+    screen('<div class="card"><div class="big-ico">' + icon + '</div><span class="kicker">' + kicker + '</span><h1>' + title + '</h1><p style="margin-top:10px">' + text + '</p></div>');
+  }
+
+  if (!info || !LK || !url) {
+    message(ICO.link, 'Голосовой чат клуба', 'Ссылка не работает', 'Попроси друга в клубе прислать новую ссылку.');
+    return;
+  }
+  if (info.exp * 1000 < Date.now()) {
+    message(ICO.clock, 'Голосовой чат клуба', 'Ссылка устарела', 'Она работает 3 часа. Попроси друга в клубе прислать новую.');
+    return;
+  }
+
+  var room = null;
+  var micOn = true;
+  var holding = false;
+  var joinedAt = 0;
+  var timer = null;
+  var chat = [];            // сообщения комнаты (как в клубе)
+  var pending = {};         // свои, ещё не подтверждённые: nonce → { text, at, error }
+  var mine = {};            // nonce своих сообщений
+  var meter = null;
+
+  // ── Вход ──────────────────────────────────────────────────────────────────
+  function start() {
+    document.body.classList.remove('in-room');
+    screen('<div class="card">'
+      + '<div class="inviter"><div class="ring"><div class="av">' + initial(info.by || 'C') + '</div></div>'
+      + '<div><span class="kicker">Тебя зовут в голос</span>'
+      + '<h1>' + (info.by ? esc(info.by) + ' ждёт тебя' : 'Друзья ждут тебя') + '</h1></div></div>'
+      + '<p>Друзья сидят в клубе и зовут поговорить, пока играют. Ничего скачивать не нужно — нужен только микрофон. Есть и чат.</p>'
+      + '<div class="chip">Ты зайдёшь как <b>' + esc(info.name) + '</b></div>'
+      + '<button class="go" id="go">' + ICO.mic + 'Войти в голос</button>'
+      + '<p class="note" id="msg">Браузер спросит разрешение на микрофон — нажми «Разрешить»</p>'
+      + '</div>');
+    $('go').onclick = join;
+  }
+
+  function kindOf(p) {
+    try { return JSON.parse(p.metadata || '{}').kind === 'club' ? 'club' : 'friend'; } catch (e) { return 'friend'; }
+  }
+  function clubIds() {
+    var ids = [];
+    if (room) room.remoteParticipants.forEach(function (p) { if (kindOf(p) === 'club') ids.push(p.identity); });
+    return ids;
+  }
+  function micTrack() {
+    var pub = room && room.localParticipant.getTrackPublication(LK.Track.Source.Microphone);
+    return pub && pub.track ? pub.track : null;
+  }
+  function captureOpts() {
+    return { deviceId: prefs.input || undefined, noiseSuppression: prefs.ns, echoCancellation: prefs.ec, autoGainControl: prefs.agc };
+  }
+  // Говорю ли сейчас: микрофон включён и (открытый режим или зажата «рация»)
+  function applyTalk() {
+    var t = micTrack();
+    if (!t) return;
+    var want = micOn && (prefs.mode === 'open' || holding);
+    if (want && t.isMuted) t.unmute();
+    if (!want && !t.isMuted) t.mute();
+  }
+
+  // ── Разговор ──────────────────────────────────────────────────────────────
+  function layout() {
+    live.hidden = false;
+    document.body.classList.add('in-room');
+    screen('<div class="grid">'
+      + '<section class="card">'
+      + '<span class="kicker">Ты в голосе</span>'
+      + '<div class="head-row"><h1 id="count"></h1><span class="timer" id="clock">00:00</span></div>'
+      + '<ul class="people" id="people"></ul>'
+      + '<button class="ptt" id="ptt" hidden>Удерживай, чтобы говорить<span id="ptt-key"> · или зажми пробел</span></button>'
+      + '<div class="controls" id="controls"></div>'
+      + '</section>'
+      + '<section class="card chat-card">'
+      + '<div class="chat-head"><div><h2>Чат комнаты</h2><small>видят все в комнате — и в клубе, и из дома</small></div>'
+      + '<button class="bell" id="bell"></button></div>'
+      + '<div class="chat-list" id="chat"><div class="chat-empty">Сообщений пока нет. Напиши первым!</div></div>'
+      + '<form class="chat-form" id="chat-form" autocomplete="off"><input id="chat-in" maxlength="300" placeholder="Сообщение…" enterkeyhint="send">'
+      + '<button type="submit" aria-label="Отправить">' + ICO.send + '</button></form>'
+      + '</section></div>');
+    $('chat-form').onsubmit = function (e) { e.preventDefault(); sendChat($('chat-in').value); };
+    $('bell').onclick = function () { prefs.sound = !prefs.sound; savePrefs(); renderBell(); };
+    var ptt = $('ptt');
+    var down = function (e) { e.preventDefault(); holding = true; ptt.classList.add('down'); applyTalk(); };
+    var up = function () { if (!holding) return; holding = false; ptt.classList.remove('down'); applyTalk(); };
+    ptt.addEventListener('pointerdown', down);
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) { ptt.addEventListener(ev, up); });
+    if (matchMedia('(pointer: coarse)').matches) $('ptt-key').hidden = true;
+    renderBell();
+    renderChat();
+    render();
+  }
+
+  function renderBell() {
+    var b = $('bell');
+    if (b) b.innerHTML = (prefs.sound ? ICO.bell : ICO.bellOff) + (prefs.sound ? 'Звук вкл' : 'Звук выкл');
+    if (b) b.className = 'bell' + (prefs.sound ? ' on' : '');
+  }
+
+  function clock() {
+    var s = Math.max(0, Math.floor((Date.now() - joinedAt) / 1000));
+    var m = Math.floor(s / 60);
+    return (m < 10 ? '0' : '') + m + ':' + (s % 60 < 10 ? '0' : '') + (s % 60);
+  }
+  function plural(n) {
+    return n % 10 === 1 && n % 100 !== 11 ? 'человек' : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'человека' : 'человек');
+  }
+
+  function render() {
+    if (!room || !$('people')) return;
+    var n = room.remoteParticipants.size + 1;
+    $('count').textContent = n + ' ' + plural(n) + ' в разговоре';
+    var talking = micOn && (prefs.mode === 'open' || holding);
+    var list = [{ name: info.name, speaking: room.localParticipant.isSpeaking && talking, kind: 'me' }];
+    room.remoteParticipants.forEach(function (p) { list.push({ name: p.name || 'Игрок', speaking: p.isSpeaking, kind: kindOf(p) }); });
+    $('people').innerHTML = list.map(function (x) {
+      var tag = x.kind === 'me' ? (!micOn ? 'микрофон выключен' : prefs.mode === 'ptt' ? 'рация' : 'это ты') : x.kind === 'club' ? 'в клубе' : 'из дома';
+      return '<li class="' + (x.speaking ? 'on' : '') + '"><span class="pav ' + x.kind + '">' + initial(x.name) + '</span>'
+        + '<span class="pname">' + esc(x.name) + (x.speaking ? '<span class="bars"><i></i><i></i><i></i></span>' : '') + '</span>'
+        + '<span class="ptag ' + x.kind + (x.kind === 'me' && !micOn ? ' off' : '') + '">' + tag + '</span></li>';
+    }).join('');
+    $('ptt').hidden = !(prefs.mode === 'ptt' && micOn);
+    $('controls').innerHTML =
+      '<button class="ctl' + (micOn ? '' : ' off') + '" id="mic"><span class="c">' + (micOn ? ICO.mic : ICO.micOff) + '</span>' + (micOn ? 'Микрофон' : 'Включить') + '</button>'
+      + '<button class="ctl" id="gear"><span class="c">' + ICO.gear + '</span>Настройки</button>'
+      + '<button class="ctl leave" id="leave"><span class="c">' + ICO.leave + '</span>Выйти</button>';
+    $('mic').onclick = function () { micOn = !micOn; applyTalk(); render(); };
+    $('gear').onclick = openSettings;
+    $('leave').onclick = function () { room.disconnect(); };
+  }
+
+  // ── Чат ───────────────────────────────────────────────────────────────────
+  function hm(at) { var t = new Date(at * 1000); return String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0'); }
+  function linkify(s) { return s.replace(/https?:\/\/[^\s<]+/g, function (u) { return '<a href="' + u + '" target="_blank" rel="noopener noreferrer">' + u + '</a>'; }); }
+  function line(m, prev) {
+    var own = Boolean(m.nonce && mine[m.nonce]);
+    var cont = prev && prev.from === m.from && m.at - prev.at < 180 && !prev.pending;
+    var color = AVA[Math.abs(Number(m.from) || 0) % AVA.length];
+    return '<div class="msg' + (own ? ' mine' : '') + (cont ? ' cont' : '') + (m.pending ? ' pending' : '') + '">'
+      + '<span class="mav" style="background:' + color + '">' + initial(m.name) + '</span>'
+      + '<div class="mbody">'
+      + (cont ? '' : '<div class="mmeta"><b>' + esc(m.name) + '</b>' + (m.friend ? '<span class="mfrom">из дома</span>' : '') + '<span class="mtime">' + hm(m.at) + '</span></div>')
+      + '<div class="mtext">' + linkify(esc(m.text)) + '</div>'
+      + (m.error ? '<div class="merr">' + esc(m.error) + (m.retry ? ' · <button data-retry="' + esc(m.nonce) + '">отправить ещё раз</button>' : '') + '</div>' : '')
+      + '</div></div>';
+  }
+  function renderChat() {
+    var box = $('chat');
+    if (!box) return;
+    var near = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+    var all = chat.slice();
+    Object.keys(pending).forEach(function (k) { var p = pending[k]; all.push({ from: 'me', name: info.name, text: p.text, at: p.at, nonce: k, friend: true, pending: !p.error, error: p.error, retry: p.retry }); });
+    box.innerHTML = all.length ? all.map(function (m, i) { return line(m, all[i - 1]); }).join('') : '<div class="chat-empty">Сообщений пока нет. Напиши первым!</div>';
+    box.querySelectorAll('[data-retry]').forEach(function (b) {
+      b.onclick = function () { var p = pending[b.dataset.retry]; delete pending[b.dataset.retry]; if (p) sendChat(p.text); };
+    });
+    if (near) box.scrollTop = box.scrollHeight;
+  }
+  function ping() {
+    if (!prefs.sound || !document.hidden) return;
+    try {
+      var ctx = new (window.AudioContext || window.webkitAudioContext)();
+      var o = ctx.createOscillator(); var g = ctx.createGain();
+      o.frequency.value = 880; g.gain.value = 0.04;
+      o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.12);
+      setTimeout(function () { ctx.close(); }, 400);
+    } catch (e) { /* без звука */ }
+  }
+  function onData(payload, p, kind, topic) {
+    if (topic !== TOPIC || !p || kindOf(p) !== 'club') return;
+    var m = null;
+    try { m = JSON.parse(new TextDecoder().decode(payload)); } catch (e) { return; }
+    if (!m) return;
+    if (m.t === 'msg' && Array.isArray(m.list)) {
+      var fresh = m.list.filter(function (x) { return !chat.some(function (y) { return y.id === x.id; }); });
+      if (!fresh.length) return;
+      fresh.forEach(function (x) { if (x.nonce && pending[x.nonce]) { mine[x.nonce] = true; delete pending[x.nonce]; } });
+      chat = chat.concat(fresh).sort(function (a, b) { return a.id - b.id; }).slice(-150);
+      if (!m.history && fresh.some(function (x) { return !(x.nonce && mine[x.nonce]); })) ping();
+      renderChat();
+    } else if (m.t === 'gone' && Array.isArray(m.ids)) {
+      chat = chat.filter(function (x) { return m.ids.indexOf(x.id) < 0; });
+      renderChat();
+    } else if (m.t === 'err' && m.nonce && pending[m.nonce]) {
+      pending[m.nonce].error = 'Не отправлено: ' + String(m.error || '').replace(/^Не отправлено:\s*/, '');
+      renderChat();
+    }
+  }
+  function sendData(obj, to) {
+    if (!room) return;
+    var data = new TextEncoder().encode(JSON.stringify(obj));
+    room.localParticipant.publishData(data, { reliable: true, topic: TOPIC, destinationIdentities: to }).catch(function () {});
+  }
+  function sendChat(raw) {
+    var text = String(raw || '').replace(/\s+/g, ' ').trim();
+    if (!text || !room) return;
+    $('chat-in').value = '';
+    var nonce = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    pending[nonce] = { text: text, at: Math.floor(Date.now() / 1000) };
+    mine[nonce] = true;
+    var club = clubIds();
+    if (!club.length) {
+      pending[nonce].error = 'В клубе сейчас никого — сообщение не дойдёт';
+      pending[nonce].retry = true;
+    } else {
+      sendData({ t: 'say', nonce: nonce, text: text }, club);
+      setTimeout(function () {
+        if (pending[nonce] && !pending[nonce].error) { pending[nonce].error = 'Не дошло'; pending[nonce].retry = true; renderChat(); }
+      }, 9000);
+    }
+    renderChat();
+  }
+
+  // ── Настройки ─────────────────────────────────────────────────────────────
+  function openSettings() {
+    var bg = document.createElement('div');
+    bg.className = 'sheet-bg';
+    bg.innerHTML = '<div class="sheet" role="dialog" aria-label="Настройки голоса">'
+      + '<div class="sheet-head"><h2>Настройки голоса</h2><button class="x" id="sx" aria-label="Закрыть">×</button></div>'
+      + '<div class="set"><label for="s-in">Микрофон</label><select id="s-in"></select>'
+      + '<div class="meter"><i id="s-lvl"></i></div><span class="hint">Скажи что-нибудь — полоска должна двигаться</span></div>'
+      + '<div class="set" id="s-out-box"><label for="s-out">Звук (наушники или колонки)</label><select id="s-out"></select></div>'
+      + '<div class="set"><span class="lbl">Как говорить</span><div class="seg"><button id="s-open">Открытый микрофон</button><button id="s-ptt">Рация</button></div>'
+      + '<span class="hint" id="s-mode-hint"></span></div>'
+      + '<div class="set"><span class="lbl">Обработка голоса</span>'
+      + '<label class="tog">Шумоподавление<input type="checkbox" id="s-ns"></label>'
+      + '<label class="tog">Подавление эха (если без наушников)<input type="checkbox" id="s-ec"></label>'
+      + '<label class="tog">Автогромкость микрофона<input type="checkbox" id="s-agc"></label></div>'
+      + '<div class="set"><span class="lbl">Громкость собеседников</span><div id="s-vols"></div></div>'
+      + '<button class="done" id="sdone">Готово</button></div>';
+    document.body.appendChild(bg);
+    var close = function () { stopMeter(); bg.remove(); render(); };
+    bg.onclick = function (e) { if (e.target === bg) close(); };
+    $('sx').onclick = close; $('sdone').onclick = close;
+
+    // Устройства
+    LK.Room.getLocalDevices('audioinput').then(function (list) {
+      $('s-in').innerHTML = list.map(function (d, i) { return '<option value="' + esc(d.deviceId) + '">' + esc(d.label || ('Микрофон ' + (i + 1))) + '</option>'; }).join('');
+      var cur = room && room.getActiveDevice('audioinput');
+      $('s-in').value = prefs.input || cur || (list[0] && list[0].deviceId) || '';
+    }).catch(function () {});
+    var canOut = 'setSinkId' in HTMLMediaElement.prototype;
+    $('s-out-box').hidden = !canOut;
+    if (canOut) {
+      LK.Room.getLocalDevices('audiooutput').then(function (list) {
+        $('s-out').innerHTML = list.map(function (d, i) { return '<option value="' + esc(d.deviceId) + '">' + esc(d.label || ('Устройство ' + (i + 1))) + '</option>'; }).join('');
+        $('s-out').value = prefs.output || (room && room.getActiveDevice('audiooutput')) || 'default';
+      }).catch(function () {});
+    }
+    $('s-in').onchange = function () { prefs.input = this.value; savePrefs(); restartMic(); };
+    $('s-out').onchange = function () { prefs.output = this.value; savePrefs(); if (room) room.switchActiveDevice('audiooutput', prefs.output).catch(function () {}); };
+
+    // Режим
+    var mode = function () {
+      $('s-open').className = prefs.mode === 'open' ? 'on' : '';
+      $('s-ptt').className = prefs.mode === 'ptt' ? 'on' : '';
+      $('s-mode-hint').textContent = prefs.mode === 'open' ? 'Тебя слышно всегда, пока микрофон включён'
+        : 'Тебя слышно, только пока держишь кнопку «Удерживай, чтобы говорить»' + (matchMedia('(pointer: coarse)').matches ? '' : ' или пробел');
+    };
+    $('s-open').onclick = function () { prefs.mode = 'open'; savePrefs(); mode(); applyTalk(); };
+    $('s-ptt').onclick = function () { prefs.mode = 'ptt'; savePrefs(); mode(); applyTalk(); };
+    mode();
+
+    // Обработка
+    [['s-ns', 'ns'], ['s-ec', 'ec'], ['s-agc', 'agc']].forEach(function (x) {
+      $(x[0]).checked = prefs[x[1]];
+      $(x[0]).onchange = function () { prefs[x[1]] = this.checked; savePrefs(); restartMic(); };
+    });
+
+    // Громкость каждого
+    var vols = [];
+    room.remoteParticipants.forEach(function (p) { vols.push(p); });
+    $('s-vols').innerHTML = vols.length ? vols.map(function (p) {
+      var v = prefs.vol[p.identity] != null ? prefs.vol[p.identity] : 100;
+      return '<div class="vol"><span>' + esc(p.name || 'Игрок') + '</span><input type="range" min="0" max="100" step="5" value="' + v + '" data-vol="' + esc(p.identity) + '"><output>' + v + '%</output></div>';
+    }).join('') : '<span class="hint">Пока в комнате никого, кроме тебя</span>';
+    $('s-vols').querySelectorAll('[data-vol]').forEach(function (r) {
+      r.oninput = function () {
+        prefs.vol[r.dataset.vol] = Number(r.value); savePrefs();
+        r.nextElementSibling.textContent = r.value + '%';
+        var p = room.remoteParticipants.get(r.dataset.vol);
+        if (p) p.setVolume(Number(r.value) / 100);
+      };
+    });
+    startMeter();
+  }
+
+  function restartMic() {
+    var t = micTrack();
+    if (t) t.restartTrack(captureOpts()).then(function () { applyTalk(); startMeter(); }).catch(function () {});
+  }
+
+  // Полоска громкости своего микрофона (то, что слышат другие)
+  function startMeter() {
+    stopMeter();
+    var t = micTrack();
+    if (!t || !t.mediaStreamTrack) return;
+    try {
+      var ctx = new (window.AudioContext || window.webkitAudioContext)();
+      var an = ctx.createAnalyser(); an.fftSize = 512;
+      ctx.createMediaStreamSource(new MediaStream([t.mediaStreamTrack])).connect(an);
+      var buf = new Uint8Array(an.fftSize);
+      var raf = 0;
+      var loop = function () {
+        an.getByteTimeDomainData(buf);
+        var peak = 0;
+        for (var i = 0; i < buf.length; i++) peak = Math.max(peak, Math.abs(buf[i] - 128));
+        var el = $('s-lvl');
+        if (el) el.style.width = Math.min(100, Math.round(peak / 128 * 160)) + '%';
+        raf = requestAnimationFrame(loop);
+      };
+      loop();
+      meter = { stop: function () { cancelAnimationFrame(raf); ctx.close(); } };
+    } catch (e) { meter = null; }
+  }
+  function stopMeter() { if (meter) { meter.stop(); meter = null; } }
+
+  // Рация на компьютере — пробел (когда не пишешь в чат)
+  var typingField = function (e) { return e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName); };
+  document.addEventListener('keydown', function (e) {
+    if (e.code !== 'Space' || e.repeat || prefs.mode !== 'ptt' || !room || typingField(e)) return;
+    e.preventDefault(); holding = true; if ($('ptt')) $('ptt').classList.add('down'); applyTalk();
+  });
+  document.addEventListener('keyup', function (e) {
+    if (e.code !== 'Space' || !holding) return;
+    holding = false; if ($('ptt')) $('ptt').classList.remove('down'); applyTalk();
+  });
+
+  // ── Подключение ───────────────────────────────────────────────────────────
+  function join() {
+    var btn = $('go');
+    var msg = $('msg');
+    btn.disabled = true;
+    msg.className = 'note';
+    msg.textContent = 'Подключаемся…';
+    room = new LK.Room({ adaptiveStream: true, dynacast: true, audioCaptureDefaults: captureOpts(),
+      audioOutput: prefs.output ? { deviceId: prefs.output } : undefined });
+    room.on(LK.RoomEvent.TrackSubscribed, function (track, pub, p) {
+      if (track.kind !== 'audio') return;
+      $('audio').appendChild(track.attach());
+      if (prefs.vol[p.identity] != null) p.setVolume(prefs.vol[p.identity] / 100);
+    });
+    room.on(LK.RoomEvent.TrackUnsubscribed, function (track) { track.detach().forEach(function (el) { el.remove(); }); });
+    [LK.RoomEvent.ParticipantConnected, LK.RoomEvent.ParticipantDisconnected, LK.RoomEvent.ActiveSpeakersChanged, LK.RoomEvent.TrackMuted, LK.RoomEvent.TrackUnmuted]
+      .forEach(function (ev) { room.on(ev, render); });
+    // Пришёл ПК из клуба — попросим переписку (если её ещё нет)
+    room.on(LK.RoomEvent.ParticipantConnected, function (p) { if (kindOf(p) === 'club' && !chat.length) sendData({ t: 'hello' }, [p.identity]); });
+    room.on(LK.RoomEvent.DataReceived, onData);
+    room.on(LK.RoomEvent.Disconnected, function (reason) {
+      clearInterval(timer);
+      stopMeter();
+      var sheet = document.querySelector('.sheet-bg');
+      if (sheet) sheet.remove();
+      var closed = reason === LK.DisconnectReason.ROOM_DELETED;
+      room = null;
+      chat = []; pending = {};
+      if (closed) message(ICO.bell, 'Голосовой чат клуба', 'Комната закрылась', 'В клубе все вышли из комнаты. Заходи к нам сам — поиграем вместе!');
+      else {
+        message(ICO.leave, 'Голосовой чат клуба', 'Ты вышел из голоса', 'Чтобы вернуться, открой ссылку ещё раз — она работает 3 часа.');
+        app.querySelector('.card').insertAdjacentHTML('beforeend', '<button class="go" id="again">' + ICO.mic + 'Вернуться в голос</button>');
+        $('again').onclick = function () { start(); };
+      }
+    });
+    room.connect(url, token)
+      .then(function () { return room.localParticipant.setMicrophoneEnabled(true, captureOpts()); })
+      .then(function () { return room.startAudio(); })
+      .then(function () {
+        joinedAt = Date.now();
+        timer = setInterval(function () { var c = $('clock'); if (c) c.textContent = clock(); }, 1000);
+        layout();
+        applyTalk();
+        var club = clubIds();
+        if (club.length) sendData({ t: 'hello' }, club);
+      })
+      .catch(function (err) {
+        btn.disabled = false;
+        var text = String(err && err.message || err);
+        msg.className = 'note err';
+        msg.textContent = /Permission|NotAllowed/i.test(text) ? 'Браузер не дал микрофон. Разреши доступ к микрофону и нажми ещё раз.'
+          : /401|token|expired/i.test(text) ? 'Ссылка устарела или комната уже закрыта. Попроси новую.'
+            : 'Не получилось подключиться: ' + text;
+      });
+  }
+
+  start();
+};
+</script>
+</body></html>
