@@ -242,7 +242,7 @@ window.__qhStart = function () {
   var info = null;
   try {
     var pl = JSON.parse(decodeURIComponent(escape(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))));
-    info = { name: pl.name, exp: pl.exp, by: (JSON.parse(pl.metadata || '{}').by) || '' };
+    info = { name: pl.name, exp: pl.exp, by: (JSON.parse(pl.metadata || '{}').by) || '', id: pl.jti || token.slice(-16) };
   } catch (e) { info = null; }
 
   // Настройки — в этом браузере
@@ -261,6 +261,14 @@ window.__qhStart = function () {
     message(ICO.link, 'Голосовой чат клуба', 'Ссылка не работает', 'Попроси друга в клубе прислать новую ссылку.');
     return;
   }
+  // Комната по этой ссылке уже закрылась (в клубе все вышли) — сразу говорим, не заходим
+  var closedKey = 'qh-closed-' + (info && info.id);
+  var wasClosed = false;
+  try { wasClosed = Boolean(info && localStorage.getItem(closedKey)); } catch (e) { wasClosed = false; }
+  if (info && wasClosed) {
+    message(ICO.bell, 'Голосовой чат клуба', 'Комната закрылась', 'В клубе все вышли из комнаты. Попроси друга в клубе прислать новую ссылку — или заходи к нам сам!');
+    return;
+  }
   if (info.exp * 1000 < Date.now()) {
     message(ICO.clock, 'Голосовой чат клуба', 'Ссылка устарела', 'Она работает 3 часа. Попроси друга в клубе прислать новую.');
     return;
@@ -277,6 +285,15 @@ window.__qhStart = function () {
   var meter = null;
 
   // ── Вход ──────────────────────────────────────────────────────────────────
+  var alone = null;
+  var closedByClub = false;
+  function closeIfAlone(ms) {
+    clearTimeout(alone);
+    alone = setTimeout(function () {
+      if (room && !clubIds().length) { closedByClub = true; room.disconnect(); }
+    }, ms);
+  }
+
   function start() {
     document.body.classList.remove('in-room');
     screen('<div class="card">'
@@ -600,14 +617,22 @@ window.__qhStart = function () {
     [LK.RoomEvent.ParticipantConnected, LK.RoomEvent.ParticipantDisconnected, LK.RoomEvent.ActiveSpeakersChanged, LK.RoomEvent.TrackMuted, LK.RoomEvent.TrackUnmuted]
       .forEach(function (ev) { room.on(ev, render); });
     // Пришёл ПК из клуба — попросим переписку (если её ещё нет)
-    room.on(LK.RoomEvent.ParticipantConnected, function (p) { if (kindOf(p) === 'club' && !chat.length) sendData({ t: 'hello' }, [p.identity]); });
+    room.on(LK.RoomEvent.ParticipantConnected, function (p) {
+      if (kindOf(p) !== 'club') return;
+      clearTimeout(alone);
+      if (!chat.length) sendData({ t: 'hello' }, [p.identity]);
+    });
+    // Из клуба в комнате никого — без клуба комнаты нет: подождём (вдруг связь моргнула) и закроем
+    room.on(LK.RoomEvent.ParticipantDisconnected, function () { if (!clubIds().length) closeIfAlone(15000); });
     room.on(LK.RoomEvent.DataReceived, onData);
     room.on(LK.RoomEvent.Disconnected, function (reason) {
       clearInterval(timer);
       stopMeter();
       var sheet = document.querySelector('.sheet-bg');
       if (sheet) sheet.remove();
-      var closed = reason === LK.DisconnectReason.ROOM_DELETED;
+      clearTimeout(alone);
+      var closed = reason === LK.DisconnectReason.ROOM_DELETED || closedByClub;
+      if (closed) { try { localStorage.setItem(closedKey, '1'); } catch (e) { /* без памяти */ } }
       room = null;
       chat = []; pending = {};
       if (closed) message(ICO.bell, 'Голосовой чат клуба', 'Комната закрылась', 'В клубе все вышли из комнаты. Заходи к нам сам — поиграем вместе!');
@@ -627,6 +652,7 @@ window.__qhStart = function () {
         applyTalk();
         var club = clubIds();
         if (club.length) sendData({ t: 'hello' }, club);
+        else closeIfAlone(8000);
       })
       .catch(function (err) {
         btn.disabled = false;
