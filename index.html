@@ -74,7 +74,7 @@
 
   main { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 16px; padding: 28px 0 20px; }
   body.in-room main { justify-content: flex-start; padding-top: 20px; }
-  .grid { display: grid; gap: 16px; }
+  .grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
   @media (min-width: 860px) {
     .grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); align-items: start; }
   }
@@ -147,6 +147,17 @@
   .ptag { font-size: 12px; color: var(--dim); white-space: nowrap; }
   .ptag.club { color: #9FCBEF; }
   .ptag.off { color: var(--bad); }
+  .people { grid-template-columns: minmax(0, 1fr); }
+  .people li { flex-wrap: wrap; min-width: 0; }
+  .pvol input { width: 100%; min-width: 0; }
+  .pvol { flex-basis: 100%; display: grid; grid-template-columns: 18px 1fr 44px; gap: 8px; align-items: center; padding: 2px 0 0 50px; }
+  .pvol svg { width: 16px; height: 16px; color: var(--dim); }
+  .pvol output { font-size: 12px; color: var(--dim); text-align: right; font-variant-numeric: tabular-nums; }
+  .pvol input { height: 18px; }
+  .keybind { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+  .keybind kbd { flex: 1; padding: 10px 12px; background: var(--plate-3); border: 1px solid var(--line); font: inherit; font-weight: 700; color: var(--text); text-align: center; }
+  .keybind kbd.wait { border-color: var(--xp); color: var(--xp); }
+  .keybind button { padding: 10px 14px; color: #111; background: var(--xp); }
   .bars { display: inline-flex; gap: 2px; align-items: flex-end; height: 14px; margin-left: 6px; }
   .bars i { width: 3px; background: var(--ok); border-radius: 1px; animation: bar .8s ease-in-out infinite; }
   .bars i:nth-child(2) { animation-delay: .15s; } .bars i:nth-child(3) { animation-delay: .3s; }
@@ -168,7 +179,7 @@
     background: var(--plate-3); border: 1px solid var(--line); }
   .btn-map:hover { border-color: var(--xp-edge); color: var(--xp); }
   .btn-map svg { width: 18px; height: 18px; color: var(--xp); }
-  .left-col { display: grid; gap: 16px; align-content: start; }
+  .left-col { display: grid; gap: 16px; align-content: start; grid-template-columns: minmax(0, 1fr); min-width: 0; }
   .ptt { width: 100%; margin-top: 16px; padding: 18px; background: var(--plate-3); border: 1px dashed var(--xp-edge); color: var(--muted); font-size: 15px; user-select: none; -webkit-user-select: none; touch-action: none; }
   .ptt.down { background: rgba(70, 224, 122, .12); border: 1px solid var(--ok); color: var(--text); }
 
@@ -348,6 +359,7 @@ window.__qhStart = function () {
     micOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 9.3V5a3 3 0 0 0-5.7-1.3M9 9v2a3 3 0 0 0 5.1 2.1M19 11a7 7 0 0 1-1.2 3.9M5 11a7 7 0 0 0 10.8 5.9M12 18v4M8 22h8M3 3l18 18"/></svg>',
     gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
     leave: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14.5c-2.2-.6-4.3-1.8-6-3.5a1.5 1.5 0 0 1 0-2.1l1.8-1.8a1.5 1.5 0 0 1 2.1 0l1.4 1.4M14 9.5c2.2.6 4.3 1.8 6 3.5a1.5 1.5 0 0 1 0 2.1l-1.8 1.8a1.5 1.5 0 0 1-2.1 0l-1.4-1.4M3 21L21 3"/></svg>',
+    vol: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>',
     pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
     smile: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0M9 9.5h.01M15 9.5h.01"/></svg>',
     photo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-8 8"/></svg>',
@@ -372,7 +384,7 @@ window.__qhStart = function () {
   } catch (e) { info = null; }
 
   // Настройки — в этом браузере
-  var prefs = { input: '', output: '', ns: true, ec: true, agc: true, mode: 'open', sound: true, vol: {}, name: '' };
+  var prefs = { input: '', output: '', ns: true, ec: true, agc: true, mode: 'open', sound: true, vol: {}, name: '', pttKey: 'Space', pttLabel: 'Пробел' };
   try { Object.assign(prefs, JSON.parse(localStorage.getItem('qh-friend-voice') || '{}')); } catch (e) { /* нет хранилища */ }
   function savePrefs() { try { localStorage.setItem('qh-friend-voice', JSON.stringify(prefs)); } catch (e) { /* нет хранилища */ } }
 
@@ -474,7 +486,7 @@ window.__qhStart = function () {
       + '<span class="kicker">Ты в голосе</span>'
       + '<div class="head-row"><h1 id="count"></h1><span class="timer" id="clock">00:00</span></div>'
       + '<ul class="people" id="people"></ul>'
-      + '<button class="ptt" id="ptt" hidden>Удерживай, чтобы говорить<span id="ptt-key"> · или зажми пробел</span></button>'
+      + '<button class="ptt" id="ptt" hidden>Удерживай, чтобы говорить<span id="ptt-key"></span></button>'
       + '<div class="selfmic"><span>Твой микрофон</span><div class="bar"><i id="selflvl"></i></div><b id="selfmic-state">—</b></div>'
       + '<div class="controls" id="controls"></div>'
       + '</section>'
@@ -521,7 +533,7 @@ window.__qhStart = function () {
       var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
       if (f && /^image\//.test(f.type)) { e.preventDefault(); sendPhoto(f); }
     });
-    $('people').onclick = function (e) { var li = e.target.closest('[data-name]'); if (li) mention(li.dataset.name); };
+    $('people').onclick = function (e) { if (e.target.closest('.pvol')) return; var li = e.target.closest('[data-name]'); if (li) mention(li.dataset.name); };
     $('photo-in').onchange = function () { var f = this.files && this.files[0]; this.value = ''; if (f) sendPhoto(f); };
     $('chat').onclick = function (e) {
       var nm = e.target.closest('[data-name]');
@@ -536,6 +548,7 @@ window.__qhStart = function () {
     ptt.addEventListener('pointerdown', down);
     ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) { ptt.addEventListener(ev, up); });
     if (matchMedia('(pointer: coarse)').matches) $('ptt-key').hidden = true;
+    else $('ptt-key').textContent = ' · или зажми ' + prefs.pttLabel;
     renderBell();
     renderChat();
     render();
@@ -562,13 +575,43 @@ window.__qhStart = function () {
     $('count').textContent = n + ' ' + plural(n) + ' в разговоре';
     var talking = micOn && (prefs.mode === 'open' || holding);
     var list = [{ name: info.name, speaking: room.localParticipant.isSpeaking && talking, kind: 'me' }];
-    room.remoteParticipants.forEach(function (p) { list.push({ name: p.name || 'Игрок', speaking: p.isSpeaking, kind: kindOf(p) }); });
-    $('people').innerHTML = list.map(function (x) {
+    room.remoteParticipants.forEach(function (p) { list.push({ id: p.identity, name: p.name || 'Игрок', speaking: p.isSpeaking, kind: kindOf(p) }); });
+    // Строки не пересоздаём: иначе ползунок громкости срывался бы, пока его тянешь
+    var ul = $('people');
+    var seen = {};
+    list.forEach(function (x) {
+      var key = x.id || 'me';
+      seen[key] = true;
+      var li = ul.querySelector('li[data-key="' + key + '"]');
+      if (!li) {
+        li = document.createElement('li');
+        li.dataset.key = key;
+        li.innerHTML = '<span class="pav ' + x.kind + '"></span><span class="pname"></span><span class="ptag ' + x.kind + '"></span>'
+          + (x.kind === 'me' ? '' : '<div class="pvol" title="Громкость — только у тебя">' + ICO.vol
+            + '<input type="range" min="0" max="200" step="5" aria-label="Громкость ' + esc(x.name) + '"><output></output></div>');
+        ul.appendChild(li);
+        var r = li.querySelector('input[type=range]');
+        if (r) {
+          var v = prefs.vol[key] != null ? prefs.vol[key] : 100;
+          r.value = v; r.nextElementSibling.textContent = v + '%';
+          r.oninput = function () {
+            prefs.vol[key] = Number(r.value); savePrefs();
+            r.nextElementSibling.textContent = r.value + '%';
+            var p = room && room.remoteParticipants.get(key);
+            if (p) p.setVolume(Number(r.value) / 100);
+          };
+        }
+      }
       var tag = x.kind === 'me' ? (!micOn ? 'микрофон выключен' : prefs.mode === 'ptt' ? 'рация' : 'это ты') : x.kind === 'club' ? 'в клубе' : 'из дома';
-      return '<li class="' + (x.speaking ? 'on' : '') + '"' + (x.kind === 'me' ? '' : ' data-name="' + esc(x.name) + '" title="Упомянуть в чате"') + '><span class="pav ' + x.kind + '">' + initial(x.name) + '</span>'
-        + '<span class="pname">' + esc(x.name) + (x.speaking ? '<span class="bars"><i></i><i></i><i></i></span>' : '') + '</span>'
-        + '<span class="ptag ' + x.kind + (x.kind === 'me' && !micOn ? ' off' : '') + '">' + tag + '</span></li>';
-    }).join('');
+      li.className = x.speaking ? 'on' : '';
+      if (x.kind !== 'me') { li.dataset.name = x.name; li.title = 'Нажми на имя — упомянуть в чате'; }
+      li.querySelector('.pav').textContent = String(x.name || '?').trim().charAt(0).toUpperCase();
+      li.querySelector('.pname').innerHTML = esc(x.name) + (x.speaking ? '<span class="bars"><i></i><i></i><i></i></span>' : '');
+      var pt = li.querySelector('.ptag');
+      pt.textContent = tag;
+      pt.className = 'ptag ' + x.kind + (x.kind === 'me' && !micOn ? ' off' : '');
+    });
+    [].slice.call(ul.children).forEach(function (li) { if (!seen[li.dataset.key]) li.remove(); });
     $('ptt').hidden = !(prefs.mode === 'ptt' && micOn);
     $('controls').innerHTML =
       '<button class="ctl' + (micOn ? '' : ' off') + '" id="mic"><span class="c">' + (micOn ? ICO.mic : ICO.micOff) + '</span>' + (micOn ? 'Микрофон' : 'Включить') + '</button>'
@@ -784,7 +827,9 @@ window.__qhStart = function () {
       + '<div class="meter"><i id="s-lvl"></i></div><span class="hint">Скажи что-нибудь — полоска должна двигаться</span></div>'
       + '<div class="set" id="s-out-box"><label for="s-out">Звук (наушники или колонки)</label><select id="s-out"></select></div>'
       + '<div class="set"><span class="lbl">Как говорить</span><div class="seg"><button id="s-open">Открытый микрофон</button><button id="s-ptt">Рация</button></div>'
-      + '<span class="hint" id="s-mode-hint"></span></div>'
+      + '<span class="hint" id="s-mode-hint"></span>'
+      + '<div class="keybind" id="s-key-box"><span class="hint" style="flex:none">Клавиша рации</span><kbd id="s-key">' + esc(prefs.pttLabel) + '</kbd><button id="s-key-set">Назначить</button></div>'
+      + '<span class="hint" id="s-key-hint">Подойдёт любая клавиша или боковая кнопка мыши. Работает, пока окно браузера активно — если ты в игре, удобнее открытый микрофон.</span></div>'
       + '<div class="set"><span class="lbl">Обработка голоса</span>'
       + '<label class="tog">Шумоподавление<input type="checkbox" id="s-ns"></label>'
       + '<label class="tog">Подавление эха (если без наушников)<input type="checkbox" id="s-ec"></label>'
@@ -820,7 +865,22 @@ window.__qhStart = function () {
       $('s-open').className = prefs.mode === 'open' ? 'on' : '';
       $('s-ptt').className = prefs.mode === 'ptt' ? 'on' : '';
       $('s-mode-hint').textContent = prefs.mode === 'open' ? 'Тебя слышно всегда, пока микрофон включён'
-        : 'Тебя слышно, только пока держишь кнопку «Удерживай, чтобы говорить»' + (matchMedia('(pointer: coarse)').matches ? '' : ' или пробел');
+        : 'Тебя слышно, только пока держишь кнопку «Удерживай, чтобы говорить»' + (matchMedia('(pointer: coarse)').matches ? '' : ' или ' + prefs.pttLabel);
+      var touch = matchMedia('(pointer: coarse)').matches;
+      $('s-key-box').hidden = touch || prefs.mode !== 'ptt';
+      $('s-key-hint').hidden = touch || prefs.mode !== 'ptt';
+    };
+    $('s-key-set').onclick = function () {
+      var kbd = $('s-key');
+      kbd.textContent = 'Нажми клавишу…'; kbd.className = 'wait';
+      binding = function (code, label) {
+        binding = null;
+        kbd.className = '';
+        if (code) { prefs.pttKey = code; prefs.pttLabel = label; savePrefs(); }
+        kbd.textContent = prefs.pttLabel;
+        mode();
+        var pk = $('ptt-key'); if (pk && !pk.hidden) pk.textContent = ' · или зажми ' + prefs.pttLabel;
+      };
     };
     $('s-open').onclick = function () { prefs.mode = 'open'; savePrefs(); mode(); applyTalk(); };
     $('s-ptt').onclick = function () { prefs.mode = 'ptt'; savePrefs(); mode(); applyTalk(); };
@@ -837,7 +897,7 @@ window.__qhStart = function () {
     room.remoteParticipants.forEach(function (p) { vols.push(p); });
     $('s-vols').innerHTML = vols.length ? vols.map(function (p) {
       var v = prefs.vol[p.identity] != null ? prefs.vol[p.identity] : 100;
-      return '<div class="vol"><span>' + esc(p.name || 'Игрок') + '</span><input type="range" min="0" max="100" step="5" value="' + v + '" data-vol="' + esc(p.identity) + '"><output>' + v + '%</output></div>';
+      return '<div class="vol"><span>' + esc(p.name || 'Игрок') + '</span><input type="range" min="0" max="200" step="5" value="' + v + '" data-vol="' + esc(p.identity) + '"><output>' + v + '%</output></div>';
     }).join('') : '<span class="hint">Пока в комнате никого, кроме тебя</span>';
     $('s-vols').querySelectorAll('[data-vol]').forEach(function (r) {
       r.oninput = function () {
@@ -908,16 +968,47 @@ window.__qhStart = function () {
   }
   function stopSelfMeter() { if (selfMeter) { selfMeter.stop(); selfMeter = null; } }
 
-  // Рация на компьютере — пробел (когда не пишешь в чат)
+  // Рация на компьютере — своя клавиша или кнопка мыши (когда не пишешь в чат)
   var typingField = function (e) { return e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName); };
+  var binding = null;   // ждём нажатия, чтобы назначить клавишу рации
+  var KEY_NAMES = { Space: 'Пробел', ShiftLeft: 'Левый Shift', ShiftRight: 'Правый Shift', ControlLeft: 'Левый Ctrl', ControlRight: 'Правый Ctrl',
+    AltLeft: 'Левый Alt', AltRight: 'Правый Alt', CapsLock: 'Caps Lock', Tab: 'Tab', Backquote: 'Ё (~)', Enter: 'Enter',
+    Mouse1: 'Колёсико мыши', Mouse3: 'Боковая кнопка мыши (назад)', Mouse4: 'Боковая кнопка мыши (вперёд)' };
+  function keyLabel(code, key) {
+    if (KEY_NAMES[code]) return KEY_NAMES[code];
+    if (/^Key[A-Z]$/.test(code)) return code.slice(3);
+    if (/^Digit\d$/.test(code)) return code.slice(5);
+    if (/^Numpad/.test(code)) return 'Цифр. ' + code.slice(6);
+    if (/^F\d+$/.test(code)) return code;
+    return key && key.length === 1 ? key.toUpperCase() : code;
+  }
+  function pttDown() { holding = true; if ($('ptt')) $('ptt').classList.add('down'); applyTalk(); }
+  function pttUp() { if (!holding) return; holding = false; if ($('ptt')) $('ptt').classList.remove('down'); applyTalk(); }
   document.addEventListener('keydown', function (e) {
-    if (e.code !== 'Space' || e.repeat || prefs.mode !== 'ptt' || !room || typingField(e)) return;
-    e.preventDefault(); holding = true; if ($('ptt')) $('ptt').classList.add('down'); applyTalk();
+    if (binding) {
+      e.preventDefault();
+      if (e.code === 'Escape') binding(null); else binding(e.code, keyLabel(e.code, e.key));
+      return;
+    }
+    if (e.code !== prefs.pttKey || e.repeat || prefs.mode !== 'ptt' || !room || typingField(e)) return;
+    e.preventDefault(); pttDown();
   });
-  document.addEventListener('keyup', function (e) {
-    if (e.code !== 'Space' || !holding) return;
-    holding = false; if ($('ptt')) $('ptt').classList.remove('down'); applyTalk();
+  document.addEventListener('keyup', function (e) { if (e.code === prefs.pttKey) pttUp(); });
+  // Кнопки мыши: колёсико (1) и боковые (3, 4). Левую и правую не берём
+  document.addEventListener('mousedown', function (e) {
+    if (e.button < 1 || e.button === 2) return;
+    var code = 'Mouse' + e.button;
+    if (binding) { e.preventDefault(); binding(code, keyLabel(code)); return; }
+    if (code !== prefs.pttKey || prefs.mode !== 'ptt' || !room) return;
+    e.preventDefault(); pttDown();
   });
+  document.addEventListener('mouseup', function (e) {
+    var code = 'Mouse' + e.button;
+    if (e.button === 3 || e.button === 4) e.preventDefault();
+    if (code === prefs.pttKey) { e.preventDefault(); pttUp(); }
+  });
+  // Боковые кнопки мыши в браузере — «назад/вперёд»: на этой странице не листаем
+  document.addEventListener('auxclick', function (e) { if (e.button === 3 || e.button === 4) e.preventDefault(); });
 
   // ── Подключение ───────────────────────────────────────────────────────────
   var wantName = '';
@@ -929,7 +1020,7 @@ window.__qhStart = function () {
     btn.disabled = true;
     msg.className = 'note';
     msg.textContent = 'Подключаемся…';
-    room = new LK.Room({ adaptiveStream: true, dynacast: true, audioCaptureDefaults: captureOpts(),
+    room = new LK.Room({ adaptiveStream: true, dynacast: true, webAudioMix: true, audioCaptureDefaults: captureOpts(),
       audioOutput: prefs.output ? { deviceId: prefs.output } : undefined });
     room.on(LK.RoomEvent.TrackSubscribed, function (track, pub, p) {
       if (track.kind !== 'audio') return;
