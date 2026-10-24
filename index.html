@@ -1058,6 +1058,7 @@ window.__qhStart = function () {
       }).catch(function () {});
     });
     room.on(LK.RoomEvent.Disconnected, function (reason) {
+      if (retrying) return;   // это мы сами переподключаемся запасным путём
       clearInterval(timer);
       stopSelfMeter();
       stopMeter();
@@ -1082,7 +1083,21 @@ window.__qhStart = function () {
         $('again').onclick = function () { start(); };
       }
     });
+    // Звук не прошёл напрямую (сеть или провайдер режут такие соединения —
+    // «negotiation timed out») — второй раз только через сервер-посредник
+    // LiveKit по шифрованному 443, как обычный сайт
+    var retrying = false;
+    var netFail = function (e) { return /negotiation|pc connection|could not establish|timed out|timeout|ICE/i.test(String(e && e.message || e)); };
     room.connect(url, token)
+      .catch(function (err) {
+        if (!netFail(err)) throw err;
+        msg.textContent = 'Подключаемся запасным путём…';
+        retrying = true;
+        return Promise.resolve(room.disconnect()).catch(function () {}).then(function () {
+          retrying = false;
+          return room.connect(url, token, { rtcConfig: { iceTransportPolicy: 'relay' }, peerConnectionTimeout: 30000 });
+        });
+      })
       .then(function () { return room.localParticipant.setMicrophoneEnabled(true, captureOpts()); })
       .then(function () { return room.startAudio(); })
       .then(function () {
@@ -1106,7 +1121,8 @@ window.__qhStart = function () {
         msg.className = 'note err';
         msg.textContent = /Permission|NotAllowed/i.test(text) ? 'Браузер не дал микрофон. Разреши доступ к микрофону и нажми ещё раз.'
           : /401|token|expired/i.test(text) ? 'Ссылка устарела или комната уже закрыта. Попроси новую.'
-            : 'Не получилось подключиться: ' + text;
+            : netFail(text) ? 'Твоя сеть не пропускает голосовую связь — так бывает с мобильным интернетом и некоторыми провайдерами. Попробуй другую сеть (Wi‑Fi вместо мобильного или наоборот) и нажми ещё раз.'
+              : 'Не получилось подключиться: ' + text;
       });
   }
 
