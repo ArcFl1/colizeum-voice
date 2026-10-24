@@ -871,7 +871,11 @@ window.__qhStart = function () {
       room = null;
       chat = []; pending = {};
       if (closed) message(ICO.bell, 'Голосовой чат клуба', 'Комната закрылась', 'В клубе все вышли из комнаты. Заходи к нам сам — поиграем вместе!');
-      else {
+      else if (reason === LK.DisconnectReason.DUPLICATE_IDENTITY) {
+        // По этой же ссылке зашли с другого телефона или компьютера
+        message(ICO.link, 'Голосовой чат клуба', 'По этой ссылке зашёл кто-то другой',
+          'Одна ссылка — для одного человека: когда по ней заходят второй раз, первого отключает. Попроси друга в клубе прислать тебе свою ссылку.');
+      } else {
         message(ICO.leave, 'Голосовой чат клуба', 'Ты вышел из голоса', 'Чтобы вернуться, открой ссылку ещё раз — она работает 3 часа.');
         app.querySelector('.card').insertAdjacentHTML('beforeend', '<button class="go" id="again">' + ICO.mic + 'Вернуться в голос</button>');
         $('again').onclick = function () { start(); };
