@@ -99,6 +99,16 @@
     font-weight: 800; font-size: 24px; color: #111; background: linear-gradient(135deg, var(--xp-hi), var(--xp)); }
   .chip { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; padding: 8px 12px; background: var(--plate-3); border: 1px solid var(--line); font-size: 14px; color: var(--muted); }
   .chip b { color: var(--text); }
+  .namebox { display: grid; gap: 6px; margin-top: 16px; }
+  .namebox label { font-size: 13px; font-weight: 700; color: var(--muted); }
+  .namebox input, .set input[type=text] { width: 100%; padding: 12px 14px; background: var(--plate-3); border: 1px solid var(--line); color: var(--text); outline: none; font-size: 16px; }
+  .namebox input:focus, .set input[type=text]:focus { border-color: var(--xp-edge); }
+  .namebox small { font-size: 12px; color: var(--dim); }
+  .name-row { display: flex; gap: 8px; }
+  .name-row button { flex: none; padding: 0 14px; color: #111; background: var(--xp); }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 30; max-width: min(92vw, 460px); padding: 12px 16px;
+    background: var(--plate-2); border: 1px solid var(--line); box-shadow: 0 12px 30px rgba(0,0,0,.45); font-size: 14px; color: var(--text); }
+  .toast.bad { border-color: rgba(255, 90, 90, .6); }
 
   /* Кнопки */
   button, select, input { font: inherit; color: inherit; }
@@ -302,7 +312,7 @@ window.__qhStart = function () {
   } catch (e) { info = null; }
 
   // Настройки — в этом браузере
-  var prefs = { input: '', output: '', ns: true, ec: true, agc: true, mode: 'open', sound: true, vol: {} };
+  var prefs = { input: '', output: '', ns: true, ec: true, agc: true, mode: 'open', sound: true, vol: {}, name: '' };
   try { Object.assign(prefs, JSON.parse(localStorage.getItem('qh-friend-voice') || '{}')); } catch (e) { /* нет хранилища */ }
   function savePrefs() { try { localStorage.setItem('qh-friend-voice', JSON.stringify(prefs)); } catch (e) { /* нет хранилища */ } }
 
@@ -357,7 +367,9 @@ window.__qhStart = function () {
       + '<div><span class="kicker">Тебя зовут в голос</span>'
       + '<h1>' + (info.by ? esc(info.by) + ' ждёт тебя' : 'Друзья ждут тебя') + '</h1></div></div>'
       + '<p>Друзья сидят в клубе и зовут поговорить, пока играют. Ничего скачивать не нужно — нужен только микрофон. Есть и чат.</p>'
-      + '<div class="chip">Ты зайдёшь как <b>' + esc(info.name) + '</b></div>'
+      + '<div class="namebox"><label for="my-name">Как тебя назвать в разговоре</label>'
+      + '<input id="my-name" maxlength="24" autocomplete="nickname" value="' + esc(prefs.name || info.name) + '">'
+      + '<small>Это имя увидят все в комнате. Его можно поменять и потом, в настройках.</small></div>'
       + '<button class="go" id="go">' + ICO.mic + 'Войти в голос</button>'
       + '<p class="note" id="msg">Браузер спросит разрешение на микрофон — нажми «Разрешить»</p>'
       + '</div>');
@@ -564,6 +576,8 @@ window.__qhStart = function () {
     } else if (m.t === 'gone' && Array.isArray(m.ids)) {
       chat = chat.filter(function (x) { return m.ids.indexOf(x.id) < 0; });
       renderChat();
+    } else if (m.t === 'renamed') {
+      onRenamed(m);
     } else if (m.t === 'err' && m.nonce && pending[m.nonce]) {
       pending[m.nonce].error = 'Не отправлено: ' + String(m.error || '').replace(/^Не отправлено:\s*/, '');
       renderChat();
@@ -649,12 +663,52 @@ window.__qhStart = function () {
     document.body.appendChild(box);
   }
 
+  // ── Имя ───────────────────────────────────────────────────────────────────
+  // Имя меняет клуб: ПК клуба передаёт его в QuestHub, там проверка как у ников,
+  // и только потом имя меняется у всех
+  var toastTimer = null;
+  function toast(text, bad) {
+    var t = document.querySelector('.toast');
+    if (!t) { t = document.createElement('div'); t.className = 'toast'; document.body.appendChild(t); }
+    t.textContent = text; t.className = 'toast' + (bad ? ' bad' : '');
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.remove(); }, 4500);
+  }
+  var renameReq = 0;
+  var renameWait = {};
+  function requestRename(raw) {
+    var name = String(raw || '').replace(/\s+/g, ' ').trim();
+    if (!name || name === info.name || !room) return Promise.resolve(false);
+    var club = clubIds();
+    if (!club.length) { toast('Сменить имя можно, когда в комнате есть кто-то из клуба', true); return Promise.resolve(false); }
+    var req = ++renameReq;
+    return new Promise(function (resolve) {
+      renameWait[req] = resolve;
+      sendData({ t: 'rename', name: name, req: req }, club);
+      setTimeout(function () { if (renameWait[req]) { delete renameWait[req]; toast('Клуб не ответил — попробуй ещё раз', true); resolve(false); } }, 10000);
+    });
+  }
+  function onRenamed(m) {
+    var done = renameWait[m.req];
+    if (!done) return;
+    delete renameWait[m.req];
+    if (m.ok) {
+      info.name = m.name;
+      prefs.name = m.name; savePrefs();
+      toast('Теперь ты — ' + m.name);
+      render(); renderChat();
+      var inp = $('s-name'); if (inp) inp.value = m.name;
+    } else toast(m.error || 'Имя не подошло', true);
+    done(Boolean(m.ok));
+  }
+
   // ── Настройки ─────────────────────────────────────────────────────────────
   function openSettings() {
     var bg = document.createElement('div');
     bg.className = 'sheet-bg';
     bg.innerHTML = '<div class="sheet" role="dialog" aria-label="Настройки голоса">'
       + '<div class="sheet-head"><h2>Настройки голоса</h2><button class="x" id="sx" aria-label="Закрыть">×</button></div>'
+      + '<div class="set"><label for="s-name">Имя в разговоре</label><div class="name-row"><input type="text" id="s-name" maxlength="24" value="' + esc(info.name) + '">'
+      + '<button id="s-name-go">Сменить</button></div><span class="hint">Видят все в комнате. Проверяется так же, как ники в клубе</span></div>'
       + '<div class="set"><label for="s-in">Микрофон</label><select id="s-in"></select>'
       + '<div class="meter"><i id="s-lvl"></i></div><span class="hint">Скажи что-нибудь — полоска должна двигаться</span></div>'
       + '<div class="set" id="s-out-box"><label for="s-out">Звук (наушники или колонки)</label><select id="s-out"></select></div>'
@@ -670,6 +724,8 @@ window.__qhStart = function () {
     var close = function () { stopMeter(); bg.remove(); render(); };
     bg.onclick = function (e) { if (e.target === bg) close(); };
     $('sx').onclick = close; $('sdone').onclick = close;
+    $('s-name-go').onclick = function () { var b = this; b.disabled = true; requestRename($('s-name').value).then(function () { b.disabled = false; }); };
+    $('s-name').onkeydown = function (e) { if (e.key === 'Enter') $('s-name-go').click(); };
 
     // Устройства
     LK.Room.getLocalDevices('audioinput').then(function (list) {
@@ -765,7 +821,10 @@ window.__qhStart = function () {
   });
 
   // ── Подключение ───────────────────────────────────────────────────────────
+  var wantName = '';
   function join() {
+    var ni = $('my-name');
+    wantName = ni ? ni.value : '';
     var btn = $('go');
     var msg = $('msg');
     btn.disabled = true;
@@ -779,7 +838,7 @@ window.__qhStart = function () {
       if (prefs.vol[p.identity] != null) p.setVolume(prefs.vol[p.identity] / 100);
     });
     room.on(LK.RoomEvent.TrackUnsubscribed, function (track) { track.detach().forEach(function (el) { el.remove(); }); });
-    [LK.RoomEvent.ParticipantConnected, LK.RoomEvent.ParticipantDisconnected, LK.RoomEvent.ActiveSpeakersChanged, LK.RoomEvent.TrackMuted, LK.RoomEvent.TrackUnmuted]
+    [LK.RoomEvent.ParticipantConnected, LK.RoomEvent.ParticipantDisconnected, LK.RoomEvent.ActiveSpeakersChanged, LK.RoomEvent.TrackMuted, LK.RoomEvent.TrackUnmuted, LK.RoomEvent.ParticipantNameChanged]
       .forEach(function (ev) { room.on(ev, render); });
     // Пришёл ПК из клуба — попросим переписку (если её ещё нет)
     room.on(LK.RoomEvent.ParticipantConnected, function (p) {
@@ -828,6 +887,11 @@ window.__qhStart = function () {
         applyTalk();
         var club = clubIds();
         if (club.length) sendData({ t: 'hello' }, club);
+        // Своё имя: клуб должен успеть подключиться — просим сразу, а если клуба нет, ещё раз через пару секунд
+        if (wantName && wantName.trim() !== info.name) {
+          var ask = function () { if (clubIds().length) requestRename(wantName); else setTimeout(function () { if (room && clubIds().length) requestRename(wantName); }, 3000); };
+          ask();
+        }
         else closeIfAlone(8000);
       })
       .catch(function (err) {
