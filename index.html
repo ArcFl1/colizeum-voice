@@ -401,6 +401,13 @@ window.__qhStart = function () {
   }
   // Комната по этой ссылке уже закрылась (в клубе все вышли) — сразу говорим, не заходим
   var closedKey = 'qh-closed-' + (info && info.id);
+  // Пометки о закрытых комнатах нужны, пока жива ссылка (3 часа) — старше суток убираем
+  try {
+    for (var ki = localStorage.length - 1; ki >= 0; ki--) {
+      var kk = localStorage.key(ki);
+      if (kk && kk.indexOf('qh-closed-') === 0 && Date.now() - (Number(localStorage.getItem(kk)) || 0) > 86400000) localStorage.removeItem(kk);
+    }
+  } catch (e) { /* без памяти */ }
   var wasClosed = false;
   try { wasClosed = Boolean(info && localStorage.getItem(closedKey)); } catch (e) { wasClosed = false; }
   if (info && wasClosed) {
@@ -1058,7 +1065,10 @@ window.__qhStart = function () {
       if (sheet) sheet.remove();
       clearTimeout(alone);
       var closed = reason === LK.DisconnectReason.ROOM_DELETED || closedByClub;
-      if (closed) { try { localStorage.setItem(closedKey, '1'); } catch (e) { /* без памяти */ } }
+      if (closed) { try { localStorage.setItem(closedKey, String(Date.now())); } catch (e) { /* без памяти */ } }
+      // Фото из чата больше не нужны — освобождаем память браузера
+      Object.keys(photos).forEach(function (k) { try { URL.revokeObjectURL(photos[k]); } catch (e) { /* уже нет */ } });
+      photos = {};
       room = null;
       chat = []; pending = {};
       if (closed) message(ICO.bell, 'Голосовой чат клуба', 'Комната закрылась', 'В клубе все вышли из комнаты. Заходи к нам сам — поиграем вместе!');
