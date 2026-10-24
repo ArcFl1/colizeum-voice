@@ -143,6 +143,24 @@
   .bars i { width: 3px; background: var(--ok); border-radius: 1px; animation: bar .8s ease-in-out infinite; }
   .bars i:nth-child(2) { animation-delay: .15s; } .bars i:nth-child(3) { animation-delay: .3s; }
 
+  /* Свой микрофон: видно, что тебя слышно */
+  .selfmic { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; margin-top: 14px; font-size: 13px; color: var(--muted); }
+  .selfmic .bar { height: 8px; background: var(--plate-3); border: 1px solid var(--line); overflow: hidden; }
+  .selfmic .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--ok), var(--xp)); transition: width .08s linear; }
+  .selfmic b { font-weight: 700; color: var(--dim); min-width: 92px; text-align: right; }
+  .selfmic b.on { color: var(--ok); }
+  .selfmic b.off { color: var(--bad); }
+  /* Карточка клуба: друзья играют здесь — можно прийти */
+  .club-card { display: grid; gap: 12px; }
+  .club-card .row { display: flex; gap: 14px; align-items: center; }
+  .club-card img { width: 52px; height: 52px; flex: none; }
+  .club-card p { font-size: 14px; }
+  .club-card .addr2 { color: var(--text); font-weight: 700; }
+  .btn-map { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; color: var(--text); text-decoration: none; font-weight: 800;
+    background: var(--plate-3); border: 1px solid var(--line); }
+  .btn-map:hover { border-color: var(--xp-edge); color: var(--xp); }
+  .btn-map svg { width: 18px; height: 18px; color: var(--xp); }
+  .left-col { display: grid; gap: 16px; align-content: start; }
   .ptt { width: 100%; margin-top: 16px; padding: 18px; background: var(--plate-3); border: 1px dashed var(--xp-edge); color: var(--muted); font-size: 15px; user-select: none; -webkit-user-select: none; touch-action: none; }
   .ptt.down { background: rgba(70, 224, 122, .12); border: 1px solid var(--ok); color: var(--text); }
 
@@ -276,6 +294,7 @@ window.__qhStart = function () {
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var initial = function (s) { var c = String(s || '?').trim().charAt(0); return esc(c ? c.toUpperCase() : '?'); };
   var TOPIC = 'qh-chat';
+  var MAP_URL = 'https://yandex.ru/maps/?text=Colizeum%2C%20%D1%83%D0%BB.%20%D0%AF%D1%80%D0%BA%D0%B0%D1%8F%2C%2040%2C%20%D0%9A%D1%80%D0%B0%D1%81%D0%BD%D0%BE%D0%B4%D0%B0%D1%80';
   var PHOTO = 'qh-photo';         // фото из чата комнаты (от клуба)
   var PHOTO_UP = 'qh-photo-up';   // своё фото — в клуб
   var EMOJI = ['👍', '🔥', '😂', '💀', '😎', '🤝', '😭', '🎉', '😡', '🤔', '👀', '💪', '🙏', '❤️', '🫡', '🤡', '😅', '🥲', '😴', '🍀', '🏆', '🎯', 'GG', '+'];
@@ -289,6 +308,7 @@ window.__qhStart = function () {
     micOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 9.3V5a3 3 0 0 0-5.7-1.3M9 9v2a3 3 0 0 0 5.1 2.1M19 11a7 7 0 0 1-1.2 3.9M5 11a7 7 0 0 0 10.8 5.9M12 18v4M8 22h8M3 3l18 18"/></svg>',
     gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
     leave: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14.5c-2.2-.6-4.3-1.8-6-3.5a1.5 1.5 0 0 1 0-2.1l1.8-1.8a1.5 1.5 0 0 1 2.1 0l1.4 1.4M14 9.5c2.2.6 4.3 1.8 6 3.5a1.5 1.5 0 0 1 0 2.1l-1.8 1.8a1.5 1.5 0 0 1-2.1 0l-1.4-1.4M3 21L21 3"/></svg>',
+    pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
     smile: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0M9 9.5h.01M15 9.5h.01"/></svg>',
     photo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-8 8"/></svg>',
     send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>',
@@ -404,14 +424,20 @@ window.__qhStart = function () {
   function layout() {
     live.hidden = false;
     document.body.classList.add('in-room');
-    screen('<div class="grid">'
+    screen('<div class="grid"><div class="left-col">'
       + '<section class="card">'
       + '<span class="kicker">Ты в голосе</span>'
       + '<div class="head-row"><h1 id="count"></h1><span class="timer" id="clock">00:00</span></div>'
       + '<ul class="people" id="people"></ul>'
       + '<button class="ptt" id="ptt" hidden>Удерживай, чтобы говорить<span id="ptt-key"> · или зажми пробел</span></button>'
+      + '<div class="selfmic"><span>Твой микрофон</span><div class="bar"><i id="selflvl"></i></div><b id="selfmic-state">—</b></div>'
       + '<div class="controls" id="controls"></div>'
       + '</section>'
+      + '<section class="card club-card">'
+      + '<div class="row"><img src="logo-mark.png" alt=""><div><span class="kicker">Хочешь к ним?</span>'
+      + '<p style="margin-top:4px">Друзья играют в компьютерном клубе <span class="addr2">COLIZEUM на Яркой, 40</span> в Краснодаре. Приходи — поиграете вместе за соседними компьютерами.</p></div></div>'
+      + '<a class="btn-map" href="' + MAP_URL + '" target="_blank" rel="noopener">' + ICO.pin + 'Открыть клуб на Яндекс Картах</a>'
+      + '</section></div>'
       + '<section class="card chat-card">'
       + '<div class="chat-head"><div><h2>Чат комнаты</h2><small>видят все в комнате — и в клубе, и из дома</small></div>'
       + '<button class="bell" id="bell"></button></div>'
@@ -781,7 +807,7 @@ window.__qhStart = function () {
 
   function restartMic() {
     var t = micTrack();
-    if (t) t.restartTrack(captureOpts()).then(function () { applyTalk(); startMeter(); }).catch(function () {});
+    if (t) t.restartTrack(captureOpts()).then(function () { applyTalk(); startMeter(); startSelfMeter(); }).catch(function () {});
   }
 
   // Полоска громкости своего микрофона (то, что слышат другие)
@@ -808,6 +834,34 @@ window.__qhStart = function () {
     } catch (e) { meter = null; }
   }
   function stopMeter() { if (meter) { meter.stop(); meter = null; } }
+
+  // Полоска «Твой микрофон» в карточке разговора — всё время, пока ты в голосе
+  var selfMeter = null;
+  function startSelfMeter() {
+    stopSelfMeter();
+    var t = micTrack();
+    if (!t || !t.mediaStreamTrack) return;
+    try {
+      var ctx = new (window.AudioContext || window.webkitAudioContext)();
+      var an = ctx.createAnalyser(); an.fftSize = 512;
+      ctx.createMediaStreamSource(new MediaStream([t.mediaStreamTrack])).connect(an);
+      var buf = new Uint8Array(an.fftSize);
+      var iv = setInterval(function () {
+        var el = $('selflvl'), st = $('selfmic-state');
+        if (!el || !st) return;
+        var talking = micOn && (prefs.mode === 'open' || holding);
+        an.getByteTimeDomainData(buf);
+        var peak = 0;
+        for (var i = 0; i < buf.length; i++) peak = Math.max(peak, Math.abs(buf[i] - 128));
+        var lvl = talking ? Math.min(100, Math.round(peak / 128 * 170)) : 0;
+        el.style.width = lvl + '%';
+        var txt = !micOn ? 'выключен' : prefs.mode === 'ptt' && !holding ? 'держи кнопку' : lvl > 6 ? 'тебя слышно' : 'тишина';
+        if (st.textContent !== txt) { st.textContent = txt; st.className = !micOn ? 'off' : lvl > 6 ? 'on' : ''; }
+      }, 90);
+      selfMeter = { stop: function () { clearInterval(iv); ctx.close(); } };
+    } catch (e) { selfMeter = null; }
+  }
+  function stopSelfMeter() { if (selfMeter) { selfMeter.stop(); selfMeter = null; } }
 
   // Рация на компьютере — пробел (когда не пишешь в чат)
   var typingField = function (e) { return e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName); };
@@ -862,6 +916,7 @@ window.__qhStart = function () {
     });
     room.on(LK.RoomEvent.Disconnected, function (reason) {
       clearInterval(timer);
+      stopSelfMeter();
       stopMeter();
       var sheet = document.querySelector('.sheet-bg');
       if (sheet) sheet.remove();
@@ -889,6 +944,7 @@ window.__qhStart = function () {
         timer = setInterval(function () { var c = $('clock'); if (c) c.textContent = clock(); }, 1000);
         layout();
         applyTalk();
+        startSelfMeter();
         var club = clubIds();
         if (club.length) sendData({ t: 'hello' }, club);
         // Своё имя: клуб должен успеть подключиться — просим сразу, а если клуба нет, ещё раз через пару секунд
