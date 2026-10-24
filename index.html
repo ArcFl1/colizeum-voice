@@ -184,6 +184,12 @@
   .mphoto { display: block; margin-top: 4px; padding: 0; border: 1px solid var(--line); background: var(--plate-3); cursor: zoom-in; max-width: 100%; }
   .mphoto img { display: block; max-width: min(280px, 100%); max-height: 260px; }
   .mphoto.wait { padding: 26px 18px; font-size: 13px; color: var(--dim); cursor: default; }
+  .mmeta b[data-name] { cursor: pointer; }
+  .mmeta b[data-name]:hover { text-decoration: underline; }
+  .mtext .at { color: var(--xp); font-weight: 700; }
+  .msg.atme { background: var(--xp-soft); box-shadow: inset 3px 0 0 var(--xp); }
+  .people li[data-name] { cursor: pointer; }
+  .chat-card.drop { outline: 2px dashed var(--xp); outline-offset: -6px; }
   .lightbox { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(0, 0, 0, .88); cursor: zoom-out; }
   .lightbox img { max-width: 94vw; max-height: 88vh; }
 
@@ -404,7 +410,7 @@ window.__qhStart = function () {
       + '<button type="button" class="tool" id="emoji-btn" aria-label="Смайлики">' + ICO.smile + '</button>'
       + '<button type="button" class="tool" id="photo-btn" aria-label="Отправить фото">' + ICO.photo + '</button>'
       + '<input type="file" id="photo-in" accept="image/*" hidden>'
-      + '<input id="chat-in" maxlength="300" placeholder="Сообщение…" enterkeyhint="send">'
+      + '<input id="chat-in" maxlength="300" placeholder="Сообщение… (скриншот — Ctrl+V)" enterkeyhint="send">'
       + '<button type="submit" aria-label="Отправить">' + ICO.send + '</button></form></div>'
       + '</section></div>');
     $('chat-form').onsubmit = function (e) { e.preventDefault(); sendChat($('chat-in').value); $('emoji').hidden = true; $('emoji-btn').classList.remove('on'); };
@@ -417,8 +423,26 @@ window.__qhStart = function () {
       inp.focus(); inp.setSelectionRange(at + add.length, at + add.length);
     };
     $('photo-btn').onclick = function () { $('photo-in').click(); };
+    // Скриншот из буфера (Ctrl+V) и перетаскивание фото в чат
+    $('chat-in').addEventListener('paste', function (e) {
+      var items = (e.clipboardData && e.clipboardData.items) || [];
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].kind === 'file' && /^image\//.test(items[i].type)) { e.preventDefault(); sendPhoto(items[i].getAsFile()); return; }
+      }
+    });
+    var card = document.querySelector('.chat-card');
+    card.addEventListener('dragover', function (e) { if (e.dataTransfer && [].slice.call(e.dataTransfer.types || []).indexOf('Files') >= 0) { e.preventDefault(); card.classList.add('drop'); } });
+    card.addEventListener('dragleave', function (e) { if (!card.contains(e.relatedTarget)) card.classList.remove('drop'); });
+    card.addEventListener('drop', function (e) {
+      card.classList.remove('drop');
+      var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f && /^image\//.test(f.type)) { e.preventDefault(); sendPhoto(f); }
+    });
+    $('people').onclick = function (e) { var li = e.target.closest('[data-name]'); if (li) mention(li.dataset.name); };
     $('photo-in').onchange = function () { var f = this.files && this.files[0]; this.value = ''; if (f) sendPhoto(f); };
     $('chat').onclick = function (e) {
+      var nm = e.target.closest('[data-name]');
+      if (nm) { mention(nm.dataset.name); return; }
       var ph = e.target.closest('[data-photo]');
       if (ph && ph.querySelector('img')) openPhoto(ph.querySelector('img').src);
     };
@@ -458,7 +482,7 @@ window.__qhStart = function () {
     room.remoteParticipants.forEach(function (p) { list.push({ name: p.name || 'Игрок', speaking: p.isSpeaking, kind: kindOf(p) }); });
     $('people').innerHTML = list.map(function (x) {
       var tag = x.kind === 'me' ? (!micOn ? 'микрофон выключен' : prefs.mode === 'ptt' ? 'рация' : 'это ты') : x.kind === 'club' ? 'в клубе' : 'из дома';
-      return '<li class="' + (x.speaking ? 'on' : '') + '"><span class="pav ' + x.kind + '">' + initial(x.name) + '</span>'
+      return '<li class="' + (x.speaking ? 'on' : '') + '"' + (x.kind === 'me' ? '' : ' data-name="' + esc(x.name) + '" title="Упомянуть в чате"') + '><span class="pav ' + x.kind + '">' + initial(x.name) + '</span>'
         + '<span class="pname">' + esc(x.name) + (x.speaking ? '<span class="bars"><i></i><i></i><i></i></span>' : '') + '</span>'
         + '<span class="ptag ' + x.kind + (x.kind === 'me' && !micOn ? ' off' : '') + '">' + tag + '</span></li>';
     }).join('');
@@ -475,18 +499,28 @@ window.__qhStart = function () {
   // ── Чат ───────────────────────────────────────────────────────────────────
   function hm(at) { var t = new Date(at * 1000); return String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0'); }
   function linkify(s) { return s.replace(/https?:\/\/[^\s<]+/g, function (u) { return '<a href="' + u + '" target="_blank" rel="noopener noreferrer">' + u + '</a>'; }); }
+  function atMe(m) { return Boolean(m.text) && m.text.toLowerCase().indexOf('@' + String(info.name).toLowerCase()) >= 0; }
+  function marks(html) { return html.replace(/(^|\s)(@[^\s@<]{1,24})/g, '$1<span class="at">$2</span>'); }
+  // Упомянуть: «@ник » в поле сообщения
+  function mention(name) {
+    var inp = $('chat-in');
+    if (!inp || !name || name === info.name) return;
+    if (inp.value.trimEnd().slice(-(name.length + 1)) === '@' + name) { inp.focus(); return; }
+    inp.value = (inp.value + (inp.value && !/\s$/.test(inp.value) ? ' ' : '') + '@' + name + ' ').slice(0, 300);
+    inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length);
+  }
   function line(m, prev) {
     var own = Boolean(m.nonce && mine[m.nonce]);
     var cont = prev && prev.from === m.from && m.at - prev.at < 180 && !prev.pending;
     var color = AVA[Math.abs(Number(m.from) || 0) % AVA.length];
-    return '<div class="msg' + (own ? ' mine' : '') + (cont ? ' cont' : '') + (m.pending ? ' pending' : '') + '">'
+    return '<div class="msg' + (own ? ' mine' : '') + (!own && atMe(m) ? ' atme' : '') + (cont ? ' cont' : '') + (m.pending ? ' pending' : '') + '">'
       + '<span class="mav" style="background:' + color + '">' + initial(m.name) + '</span>'
       + '<div class="mbody">'
-      + (cont ? '' : '<div class="mmeta"><b>' + esc(m.name) + '</b>' + (m.friend ? '<span class="mfrom">из дома</span>' : '') + '<span class="mtime">' + hm(m.at) + '</span></div>')
+      + (cont ? '' : '<div class="mmeta"><b' + (own ? '' : ' data-name="' + esc(m.name) + '" title="Упомянуть"') + '>' + esc(m.name) + '</b>' + (m.friend ? '<span class="mfrom">из дома</span>' : '') + '<span class="mtime">' + hm(m.at) + '</span></div>')
       + (m.photo
         ? ((m.photoUrl || photos[m.id]) ? '<button type="button" class="mphoto" data-photo><img src="' + esc(m.photoUrl || photos[m.id]) + '" alt="Фото"></button>'
           : '<div class="mphoto wait">Фото загружается…</div>')
-        : '<div class="mtext">' + linkify(esc(m.text)) + '</div>')
+        : '<div class="mtext">' + marks(linkify(esc(m.text))) + '</div>')
       + (m.error ? '<div class="merr">' + esc(m.error) + (m.retry ? ' · <button data-retry="' + esc(m.nonce) + '">отправить ещё раз</button>' : '') + '</div>' : '')
       + '</div></div>';
   }
@@ -502,8 +536,8 @@ window.__qhStart = function () {
     });
     if (near) box.scrollTop = box.scrollHeight;
   }
-  function ping() {
-    if (!prefs.sound || !document.hidden) return;
+  function ping(strong) {
+    if (!strong && (!prefs.sound || !document.hidden)) return;
     try {
       var ctx = new (window.AudioContext || window.webkitAudioContext)();
       var o = ctx.createOscillator(); var g = ctx.createGain();
@@ -524,7 +558,8 @@ window.__qhStart = function () {
         if (x.nonce && pending[x.nonce]) { mine[x.nonce] = true; if (pending[x.nonce].photoUrl) photos[x.id] = pending[x.nonce].photoUrl; delete pending[x.nonce]; }
       });
       chat = chat.concat(fresh).sort(function (a, b) { return a.id - b.id; }).slice(-150);
-      if (!m.history && fresh.some(function (x) { return !(x.nonce && mine[x.nonce]); })) ping();
+      var others = fresh.filter(function (x) { return !(x.nonce && mine[x.nonce]); });
+      if (!m.history && others.length) ping(others.some(atMe));
       renderChat();
     } else if (m.t === 'gone' && Array.isArray(m.ids)) {
       chat = chat.filter(function (x) { return m.ids.indexOf(x.id) < 0; });
