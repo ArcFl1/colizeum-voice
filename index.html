@@ -106,6 +106,14 @@
   .namebox small { font-size: 12px; color: var(--dim); }
   .name-row { display: flex; gap: 8px; }
   .name-row button { flex: none; padding: 0 14px; color: #111; background: var(--xp); }
+  .agree { display: flex; gap: 10px; align-items: flex-start; margin-top: 16px; font-size: 13px; color: var(--muted); cursor: pointer; line-height: 1.45; }
+  .agree input { flex: none; width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--xp); cursor: pointer; }
+  .agree a, .foot a { color: var(--xp); }
+  .foot { text-align: center; padding-top: 12px; font-size: 12px; color: var(--dim); }
+  .doc { max-width: 640px; }
+  .doc h3 { margin: 16px 0 6px; font-size: 15px; color: var(--text); }
+  .doc p, .doc li { font-size: 14px; color: var(--muted); line-height: 1.55; }
+  .doc ul { margin: 0; padding-left: 20px; }
   .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 30; max-width: min(92vw, 460px); padding: 12px 16px;
     background: var(--plate-2); border: 1px solid var(--line); box-shadow: 0 12px 30px rgba(0,0,0,.45); font-size: 14px; color: var(--text); }
   .toast.bad { border-color: rgba(255, 90, 90, .6); }
@@ -272,6 +280,7 @@
     <span class="live" id="live" hidden><i></i>в эфире</span>
   </header>
   <main id="app"><p>Загружаем…</p></main>
+  <footer class="foot"><a href="#" id="privacy-link">Обработка данных</a> · ИП Кулагин Д. В. · г. Краснодар, ул. Яркая, д. 40</footer>
 </div>
 <div id="audio" hidden></div>
 <script>
@@ -293,6 +302,37 @@ window.__qhStart = function () {
   var $ = function (id) { return document.getElementById(id); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var initial = function (s) { var c = String(s || '?').trim().charAt(0); return esc(c ? c.toUpperCase() : '?'); };
+  // ── Обработка данных ──────────────────────────────────────────────────────
+  var AGREE_KEY = 'qh-friend-agree-1';
+  function agreed() { try { return localStorage.getItem(AGREE_KEY) === '1'; } catch (e) { return false; } }
+  var PRIVACY = '<div class="doc">'
+    + '<p>Эта страница — голосовой чат с друзьями, которые сидят в компьютерном клубе COLIZEUM. Здесь коротко и по делу: что происходит с твоими данными.</p>'
+    + '<h3>Кто обрабатывает</h3><p>Индивидуальный предприниматель Кулагин Дмитрий Владимирович, ОГРНИП 324237500400906, ИНН 231110165650, 350062, г. Краснодар, ул. Яркая, д. 40. Вопросы и отзыв согласия — по телефону +7 (918) 951-44-55 или на стойке клуба.</p>'
+    + '<h3>Что и зачем</h3><ul>'
+    + '<li><b>Имя</b>, которое ты указал, — чтобы друзья видели, кто говорит.</li>'
+    + '<li><b>Голос</b> — передаётся собеседникам в реальном времени. Не записывается.</li>'
+    + '<li><b>Сообщения и фото</b> в чате комнаты — видны всем в этой комнате. Хранятся только в памяти программы клуба, пока комната открыта, потом удаляются.</li>'
+    + '<li><b>Технические данные соединения</b> (IP-адрес, браузер) — нужны, чтобы связь работала.</li></ul>'
+    + '<p>Номер телефона, почта и другие данные не нужны и не собираются. Для рекламы ничего не используется.</p>'
+    + '<h3>Через кого идёт связь</h3><p>Голос, имя, сообщения и фото передаются через облачный голосовой сервис LiveKit (LiveKit, Inc., США), сама страница размещена на GitHub Pages (GitHub, Inc., США). Это передача данных за пределы России — отмечая согласие, ты на неё соглашаешься. Сообщения и фото попадают в программу клуба на компьютере в помещении клуба в России.</p>'
+    + '<h3>Сколько хранится</h3><p>Только пока идёт разговор: ссылка-приглашение работает 3 часа, комната удаляется, когда из неё выходят все из клуба. Настройки (микрофон, громкость, имя) хранятся только в твоём браузере.</p>'
+    + '<h3>Твои права</h3><p>Ты можешь выйти из разговора в любой момент — кнопка «Выйти». Отозвать согласие и задать вопрос можно по телефону выше. Если тебе меньше 18 лет, родители должны знать, что ты пользуешься голосовым чатом.</p>'
+    + '<p style="margin-top:14px;font-size:12px">Основание: ст. 9 Федерального закона № 152-ФЗ «О персональных данных».</p>'
+    + '</div>';
+  function openPrivacy() {
+    var bg = document.createElement('div');
+    bg.className = 'sheet-bg';
+    bg.innerHTML = '<div class="sheet" role="dialog" aria-label="Обработка данных"><div class="sheet-head"><h2>Обработка данных</h2><button class="x" aria-label="Закрыть">×</button></div>'
+      + PRIVACY + '<button class="done">Понятно</button></div>';
+    var close = function () { bg.remove(); };
+    bg.onclick = function (e) { if (e.target === bg) close(); };
+    bg.querySelector('.x').onclick = close; bg.querySelector('.done').onclick = close;
+    document.body.appendChild(bg);
+  }
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-privacy]') || e.target.id === 'privacy-link') { e.preventDefault(); openPrivacy(); }
+  });
+
   var TOPIC = 'qh-chat';
   var MAP_URL = 'https://yandex.ru/maps/?text=Colizeum%2C%20%D1%83%D0%BB.%20%D0%AF%D1%80%D0%BA%D0%B0%D1%8F%2C%2040%2C%20%D0%9A%D1%80%D0%B0%D1%81%D0%BD%D0%BE%D0%B4%D0%B0%D1%80';
   var PHOTO = 'qh-photo';         // фото из чата комнаты (от клуба)
@@ -390,10 +430,15 @@ window.__qhStart = function () {
       + '<div class="namebox"><label for="my-name">Как тебя назвать в разговоре</label>'
       + '<input id="my-name" maxlength="24" autocomplete="nickname" value="' + esc(prefs.name || info.name) + '">'
       + '<small>Это имя увидят все в комнате. Его можно поменять и потом, в настройках.</small></div>'
+      + '<label class="agree"><input type="checkbox" id="agree"' + (agreed() ? ' checked' : '') + '><span>Согласен на <a href="#" data-privacy>обработку данных</a>: имя, голос, сообщения и фото в чате передаются через голосовой сервис, в том числе за границу, и не записываются</span></label>'
       + '<button class="go" id="go">' + ICO.mic + 'Войти в голос</button>'
       + '<p class="note" id="msg">Браузер спросит разрешение на микрофон — нажми «Разрешить»</p>'
       + '</div>');
-    $('go').onclick = join;
+    $('go').onclick = function () {
+      if (!$('agree').checked) { toast('Отметь согласие на обработку данных — без него войти нельзя', true); return; }
+      try { localStorage.setItem(AGREE_KEY, '1'); } catch (e) { /* без памяти */ }
+      join();
+    };
   }
 
   function kindOf(p) {
